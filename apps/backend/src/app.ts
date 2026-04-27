@@ -10,6 +10,9 @@ import driverRoutes from './features/drivers/driver.route';
 import agentRoutes from './features/agents/agent.route';
 import tripRoutes from './features/trips/trip.route';
 import dashboardRoutes from './features/dashboard/dashboard.route';
+import customerRoutes from './features/customers/customer.route';
+import emailRoutes from './features/email/email.route';
+import publicRoutes from './features/public/public.route';
 
 const app: Application = express();
 
@@ -35,6 +38,11 @@ app.use('/api/v1/cars', carRoutes);
 app.use('/api/v1/drivers', driverRoutes);
 app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/trips', tripRoutes);
+app.use('/api/v1/customers', customerRoutes);
+app.use('/api/v1/email', emailRoutes);
+
+// Public routes (no auth — customer portal)
+app.use('/api/v1/public', publicRoutes);
 
 // Fallback for unhandled routes
 app.all('*', (req, res, next) => {

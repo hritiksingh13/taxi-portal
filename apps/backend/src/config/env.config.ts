@@ -9,6 +9,12 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   CLIENT_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // Email / SMTP (optional — email features degrade gracefully)
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

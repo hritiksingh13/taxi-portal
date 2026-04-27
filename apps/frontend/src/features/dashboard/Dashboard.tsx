@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useDashboardStore } from '../../core/store/useDashboardStore';
 import { api } from '../../core/api.client';
 import {
@@ -6,11 +6,8 @@ import {
   Users,
   Building2,
   Navigation,
-  TrendingUp,
   Wrench,
   CheckCircle2,
-  Clock,
-  WifiOff,
   RefreshCw,
 } from 'lucide-react';
 
@@ -44,7 +41,7 @@ function StatCard({
 }
 
 export default function Dashboard() {
-  const { stats, drivers, cars, agents } = useDashboardStore();
+  const { stats, drivers, cars } = useDashboardStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {

@@ -1,21 +1,26 @@
-import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useDashboardStore } from '../../core/store/useDashboardStore';
 import {
   LayoutDashboard,
   Radio,
   ClipboardList,
-  GitBranch,
   Car,
   Wifi,
   WifiOff,
+  History,
+  Users2,
+  BarChart3,
+  Mail,
 } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/live-tracking', icon: Radio, label: 'Live Tracking' },
   { path: '/data-entry', icon: ClipboardList, label: 'Data Entry' },
-  { path: '/assignments', icon: GitBranch, label: 'Assignments' },
+  { path: '/past-trips', icon: History, label: 'Past Trips' },
+  { path: '/customers', icon: Users2, label: 'Customers' },
+  { path: '/cost-analytics', icon: BarChart3, label: 'Cost Analytics' },
+  { path: '/email-updates', icon: Mail, label: 'Email Updates' },
 ];
 
 export default function Sidebar() {
@@ -43,7 +48,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-3 mb-2">
           Operations
         </p>

@@ -5,6 +5,7 @@ import app from './app';
 import { env } from './config/env.config';
 import { setIo as setTripIo } from './features/trips/trip.service';
 import { setIo as setDriverIo } from './features/drivers/driver.service';
+import { startAutoEndCron } from './cron/autoEndTrips';
 
 const httpServer = createServer(app);
 
@@ -38,6 +39,9 @@ io.on('connection', (socket: Socket) => {
     console.log(`🔴 Client disconnected: ${socket.id}. Total active: ${connectedClients}`);
   });
 });
+
+// Start auto-end cron job
+startAutoEndCron();
 
 // Boot the HTTP and WebSocket server
 httpServer.listen(env.PORT, () => {

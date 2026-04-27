@@ -20,6 +20,21 @@ export class TripController {
     res.status(200).json({ status: 'success', results: trips.length, data: { trips } });
   };
 
+  getPastTrips = async (req: Request, res: Response) => {
+    const trips = await tripService.getPastTrips();
+    res.status(200).json({ status: 'success', results: trips.length, data: { trips } });
+  };
+
+  getTripById = async (req: Request, res: Response) => {
+    const trip = await tripService.getTripById(req.params.id);
+    res.status(200).json({ status: 'success', data: { trip } });
+  };
+
+  updateTrip = async (req: Request, res: Response) => {
+    const trip = await tripService.updateTrip(req.params.id, req.body);
+    res.status(200).json({ status: 'success', data: { trip } });
+  };
+
   completeTrip = async (req: Request, res: Response) => {
     const trip = await tripService.completeTrip(req.params.id);
     res.status(200).json({ status: 'success', data: { trip } });

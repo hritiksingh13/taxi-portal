@@ -25,6 +25,13 @@ enum DriverStatus {
   Offline
 }
 
+enum TripStatus {
+  Scheduled
+  Active
+  Ended
+  Cancelled
+}
+
 model Car {
   id               String           @id @default(uuid())
   brand            String
@@ -76,16 +83,55 @@ model DriverAgent {
   @@id([driverId, agentId])
 }
 
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  trips     Trip[]
+}
+
 model Trip {
-  id                  String   @id @default(uuid())
-  currentLocation     String
-  destination         String
-  startTime           DateTime @default(now())
+  id                  String     @id @default(uuid())
+  stops               String[]
+  startTime           DateTime   @default(now())
   estimatedCompletion DateTime
+  startDate           DateTime   @default(now())
+  endDate             DateTime
+  status              TripStatus @default(Active)
+
+  // Payment fields
+  advancePaid         Float      @default(0)
+  fuelExpense         Float      @default(0)
+  pendingAmount       Float      @default(0)
+
+  // Shareable token for public customer portal
+  shareToken          String?    @unique
 
   // Relationships
   driverId            String
-  driver              Driver   @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  driver              Driver     @relation(fields: [driverId], references: [id], onDelete: Restrict)
   agentId             String
-  agent               Agent    @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  agent               Agent      @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  customerId          String?
+  customer            Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  // Feedback (1:1)
+  feedback            Feedback?
+}
+
+model Feedback {
+  id         String   @id @default(uuid())
+  stars      Int
+  experience String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  // Relationship
+  tripId     String   @unique
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 }

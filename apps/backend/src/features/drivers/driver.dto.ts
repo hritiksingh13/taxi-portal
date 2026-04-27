@@ -6,7 +6,6 @@ export const createDriverSchema = z.object({
     name: z.string().min(2, 'Driver name must be at least 2 characters'),
     phoneNumber: z.string().min(7, 'Invalid phone number'),
     status: z.enum(['Free', 'Busy', 'Offline']).default('Offline'),
-    carId: z.string().uuid().optional(),
   }),
 });
 

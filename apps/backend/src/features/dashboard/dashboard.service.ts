@@ -15,6 +15,11 @@ export class DashboardService {
       offlineDrivers,
       totalAgents,
       activeTrips,
+      totalTrips,
+      totalCustomers,
+      totalRevenue,
+      totalFuelExpense,
+      totalPending,
     ] = await Promise.all([
       prisma.car.count(),
       prisma.car.count({ where: { status: 'Active' } }),
@@ -24,14 +29,25 @@ export class DashboardService {
       prisma.driver.count({ where: { status: 'Busy' } }),
       prisma.driver.count({ where: { status: 'Offline' } }),
       prisma.agent.count(),
-      prisma.trip.count({ where: { driver: { status: 'Busy' } } }),
+      prisma.trip.count({ where: { status: 'Active' } }),
+      prisma.trip.count(),
+      prisma.customer.count(),
+      prisma.trip.aggregate({ _sum: { advancePaid: true } }),
+      prisma.trip.aggregate({ _sum: { fuelExpense: true } }),
+      prisma.trip.aggregate({ _sum: { pendingAmount: true } }),
     ]);
 
     return {
       cars: { total: totalCars, active: activeCars, maintenance: maintenanceCars },
       drivers: { total: totalDrivers, free: freeDrivers, busy: busyDrivers, offline: offlineDrivers },
       agents: { total: totalAgents },
-      trips: { active: activeTrips },
+      trips: { active: activeTrips, total: totalTrips },
+      customers: { total: totalCustomers },
+      financials: {
+        totalRevenue: totalRevenue._sum.advancePaid ?? 0,
+        totalFuelExpense: totalFuelExpense._sum.fuelExpense ?? 0,
+        totalPending: totalPending._sum.pendingAmount ?? 0,
+      },
     };
   }
 }

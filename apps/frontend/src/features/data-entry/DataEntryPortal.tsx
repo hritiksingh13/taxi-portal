@@ -10,13 +10,11 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
+  X,
+  MapPin,
 } from 'lucide-react';
 
 type Tab = 'car' | 'driver' | 'agent' | 'trip';
-
-interface FormState {
-  [key: string]: string | number;
-}
 
 function Alert({ type, message }: { type: 'success' | 'error'; message: string }) {
   return (
@@ -165,8 +163,8 @@ function CarForm() {
 
 // ── DRIVER FORM ───────────────────────────────────────────────────────────────
 function DriverForm() {
-  const { setDrivers, cars } = useDashboardStore();
-  const [form, setForm] = useState({ name: '', phoneNumber: '', status: 'Offline', carId: '' });
+  const { setDrivers } = useDashboardStore();
+  const [form, setForm] = useState({ name: '', phoneNumber: '', status: 'Offline' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -180,12 +178,10 @@ function DriverForm() {
     setLoading(true);
     setStatus(null);
     try {
-      const payload: any = { name: form.name, phoneNumber: form.phoneNumber, status: form.status };
-      if (form.carId) payload.carId = form.carId;
-      await api.post('/drivers', payload);
+      await api.post('/drivers', { name: form.name, phoneNumber: form.phoneNumber, status: form.status });
       const res = await api.get('/drivers');
       setDrivers(res.data.data.drivers);
-      setForm({ name: '', phoneNumber: '', status: 'Offline', carId: '' });
+      setForm({ name: '', phoneNumber: '', status: 'Offline' });
       setStatus({ type: 'success', message: 'Driver onboarded successfully.' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
@@ -193,8 +189,6 @@ function DriverForm() {
       setLoading(false);
     }
   };
-
-  const activeCars = cars.filter((c) => c.status === 'Active');
 
   return (
     <div className="space-y-4">
@@ -207,16 +201,6 @@ function DriverForm() {
         options={[
           { value: 'Free', label: 'Free' },
           { value: 'Offline', label: 'Offline' },
-        ]}
-      />
-      <Select
-        label="Assign Vehicle (Optional)"
-        value={form.carId}
-        onChange={set('carId')}
-        placeholder="No vehicle assigned"
-        options={[
-          { value: '', label: '— None —' },
-          ...activeCars.map((c) => ({ value: c.id, label: `${c.brand} · ${c.licensePlate}` })),
         ]}
       />
       {status && <Alert type={status.type} message={status.message} />}
@@ -279,15 +263,20 @@ function AgentForm() {
   );
 }
 
-// ── TRIP FORM ─────────────────────────────────────────────────────────────────
+// ── TRIP FORM (REBUILT: multi-stop, dates, customer, payment) ─────────────────
 function TripForm() {
-  const { drivers, agents, addTrip } = useDashboardStore();
+  const { drivers, agents, customers, addTrip } = useDashboardStore();
+  const [stops, setStops] = useState<string[]>(['', '']);
   const [form, setForm] = useState({
     driverId: '',
     agentId: '',
-    currentLocation: '',
-    destination: '',
+    customerId: '',
     estimatedDurationMinutes: '',
+    startDate: '',
+    endDate: '',
+    advancePaid: '',
+    fuelExpense: '',
+    pendingAmount: '',
   });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -296,9 +285,20 @@ function TripForm() {
 
   const freeDrivers = drivers.filter((d) => d.status === 'Free');
 
+  const updateStop = (index: number, value: string) => {
+    setStops((prev) => prev.map((s, i) => (i === index ? value : s)));
+  };
+
+  const addStop = () => setStops((prev) => [...prev, '']);
+  const removeStop = (index: number) => {
+    if (stops.length <= 2) return;
+    setStops((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const submit = async () => {
-    if (!form.driverId || !form.agentId || !form.currentLocation || !form.destination || !form.estimatedDurationMinutes) {
-      setStatus({ type: 'error', message: 'All fields are required to start a trip.' });
+    const validStops = stops.filter((s) => s.trim().length >= 2);
+    if (!form.driverId || !form.agentId || validStops.length < 2 || !form.estimatedDurationMinutes) {
+      setStatus({ type: 'error', message: 'Driver, platform, at least 2 stops, and duration are required.' });
       return;
     }
     const duration = Number(form.estimatedDurationMinutes);
@@ -309,16 +309,26 @@ function TripForm() {
     setLoading(true);
     setStatus(null);
     try {
-      const res = await api.post('/trips', {
+      const payload: any = {
         driverId: form.driverId,
         agentId: form.agentId,
-        currentLocation: form.currentLocation,
-        destination: form.destination,
+        stops: validStops,
         estimatedDurationMinutes: duration,
-      });
-      // Optimistic update (socket will also broadcast)
+      };
+      if (form.customerId) payload.customerId = form.customerId;
+      if (form.startDate) payload.startDate = form.startDate;
+      if (form.endDate) payload.endDate = form.endDate;
+      if (form.advancePaid) payload.advancePaid = Number(form.advancePaid);
+      if (form.fuelExpense) payload.fuelExpense = Number(form.fuelExpense);
+      if (form.pendingAmount) payload.pendingAmount = Number(form.pendingAmount);
+
+      const res = await api.post('/trips', payload);
       addTrip(res.data.data.trip);
-      setForm({ driverId: '', agentId: '', currentLocation: '', destination: '', estimatedDurationMinutes: '' });
+      setStops(['', '']);
+      setForm({
+        driverId: '', agentId: '', customerId: '', estimatedDurationMinutes: '',
+        startDate: '', endDate: '', advancePaid: '', fuelExpense: '', pendingAmount: '',
+      });
       setStatus({ type: 'success', message: 'Trip initiated! Driver status updated to Busy.' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
@@ -351,29 +361,62 @@ function TripForm() {
         placeholder="Select a platform..."
         options={agents.map((a) => ({ value: a.id, label: a.name }))}
       />
-      <Field
-        label="Pickup / Current Location *"
-        value={form.currentLocation}
-        onChange={set('currentLocation')}
-        placeholder="e.g. Bandra Station, Mumbai"
+      <Select
+        label="Customer (Optional)"
+        value={form.customerId}
+        onChange={set('customerId')}
+        placeholder="Select customer..."
+        options={[
+          { value: '', label: '— None —' },
+          ...customers.map((c) => ({ value: c.id, label: `${c.name} · ${c.phone}` })),
+        ]}
       />
-      <Field
-        label="Destination *"
-        value={form.destination}
-        onChange={set('destination')}
-        placeholder="e.g. Chhatrapati Shivaji Airport"
-      />
+
+      {/* Multi-stop */}
       <div>
-        <label className="label">Estimated Duration (minutes) *</label>
-        <input
-          type="number"
-          min="1"
-          className="input-field"
-          value={form.estimatedDurationMinutes}
-          onChange={(e) => set('estimatedDurationMinutes')(e.target.value)}
-          placeholder="e.g. 45"
-        />
+        <label className="label">Route Stops * (min 2)</label>
+        <div className="space-y-2">
+          {stops.map((stop, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-fleet-500/15 border border-fleet-500/20 flex-shrink-0">
+                <MapPin size={10} className={idx === 0 ? 'text-emerald-400' : idx === stops.length - 1 ? 'text-fleet-400' : 'text-slate-400'} />
+              </div>
+              <input
+                className="input-field flex-1"
+                value={stop}
+                onChange={(e) => updateStop(idx, e.target.value)}
+                placeholder={idx === 0 ? 'Pickup location' : idx === stops.length - 1 ? 'Final destination' : `Stop ${idx + 1}`}
+              />
+              {stops.length > 2 && (
+                <button onClick={() => removeStop(idx)} className="text-slate-600 hover:text-rose-400 transition-colors p-1">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button onClick={addStop} className="mt-2 flex items-center gap-1.5 text-xs text-fleet-400 hover:text-fleet-300 font-medium transition-colors">
+          <Plus size={12} /> Add Stop
+        </button>
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Start Date" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
+        <Field label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
+      </div>
+
+      <Field label="Estimated Duration (minutes) *" value={form.estimatedDurationMinutes} onChange={set('estimatedDurationMinutes')} type="number" placeholder="e.g. 45" />
+
+      {/* Payment Fields */}
+      <div className="border-t border-slate-800/60 pt-4 mt-2">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Payment Details</p>
+        <div className="grid grid-cols-3 gap-3">
+          <Field label="Advance Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
+          <Field label="Fuel Expense (₹)" value={form.fuelExpense} onChange={set('fuelExpense')} type="number" placeholder="0" />
+          <Field label="Pending (₹)" value={form.pendingAmount} onChange={set('pendingAmount')} type="number" placeholder="0" />
+        </div>
+      </div>
+
       {status && <Alert type={status.type} message={status.message} />}
       <button onClick={submit} disabled={loading || freeDrivers.length === 0} className="btn-primary w-full flex items-center justify-center gap-2">
         <Navigation size={15} />

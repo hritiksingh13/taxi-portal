@@ -10,11 +10,14 @@ import {
   CheckCircle,
   Navigation,
   Radio,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 export default function LiveTrackingHub() {
   const { activeTrips, removeTrip } = useDashboardStore();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const handleComplete = async (tripId: string) => {
     setCompleting(tripId);
@@ -26,6 +29,13 @@ export default function LiveTrackingHub() {
     } finally {
       setCompleting(null);
     }
+  };
+
+  const copyShareLink = (shareToken: string, tripId: string) => {
+    const link = `${window.location.origin}/portal/${shareToken}`;
+    navigator.clipboard.writeText(link);
+    setCopied(tripId);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   return (
@@ -88,22 +98,27 @@ export default function LiveTrackingHub() {
                           <span className="font-mono text-slate-600">{trip.driver.car.licensePlate}</span>
                         </span>
                       )}
+                      {trip.customer && (
+                        <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                          {trip.customer.name}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Center: Route */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="flex items-center gap-1.5 text-slate-300 min-w-0">
-                      <MapPin size={13} className="text-emerald-400 flex-shrink-0" />
-                      <span className="truncate">{trip.currentLocation}</span>
-                    </div>
-                    <ArrowRight size={13} className="text-slate-600 flex-shrink-0" />
-                    <div className="flex items-center gap-1.5 text-slate-300 min-w-0">
-                      <MapPin size={13} className="text-fleet-400 flex-shrink-0" />
-                      <span className="truncate">{trip.destination}</span>
-                    </div>
+                  <div className="flex items-center gap-1.5 text-sm flex-wrap">
+                    {trip.stops.map((stop, sIdx) => (
+                      <React.Fragment key={sIdx}>
+                        <div className="flex items-center gap-1 text-slate-300 min-w-0">
+                          <MapPin size={11} className={sIdx === 0 ? 'text-emerald-400 flex-shrink-0' : sIdx === trip.stops.length - 1 ? 'text-fleet-400 flex-shrink-0' : 'text-slate-500 flex-shrink-0'} />
+                          <span className="truncate text-xs">{stop}</span>
+                        </div>
+                        {sIdx < trip.stops.length - 1 && <ArrowRight size={11} className="text-slate-600 flex-shrink-0" />}
+                      </React.Fragment>
+                    ))}
                   </div>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="flex items-center gap-1 text-xs text-slate-500">
@@ -117,19 +132,31 @@ export default function LiveTrackingHub() {
                   </div>
                 </div>
 
-                {/* Right: Timer & complete button */}
+                {/* Right: Timer, share link, complete button */}
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <CountdownTimer estimatedCompletion={trip.estimatedCompletion} />
-                  <button
-                    onClick={() => handleComplete(trip.id)}
-                    disabled={completing === trip.id}
-                    className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 
-                               bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 
-                               px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-50"
-                  >
-                    <CheckCircle size={12} />
-                    {completing === trip.id ? 'Completing...' : 'Mark Complete'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {trip.shareToken && (
+                      <button
+                        onClick={() => copyShareLink(trip.shareToken!, trip.id)}
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-fleet-300 transition-colors"
+                        title="Copy shareable link"
+                      >
+                        {copied === trip.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                        {copied === trip.id ? 'Copied' : 'Share'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleComplete(trip.id)}
+                      disabled={completing === trip.id}
+                      className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 
+                                 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 
+                                 px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-50"
+                    >
+                      <CheckCircle size={12} />
+                      {completing === trip.id ? 'Completing...' : 'Mark Complete'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

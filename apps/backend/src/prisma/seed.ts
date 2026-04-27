@@ -92,8 +92,27 @@ async function main() {
     }),
   ]);
 
+  // Customers
+  await Promise.all([
+    prisma.customer.upsert({
+      where: { email: 'priya.singh@example.com' },
+      update: {},
+      create: { name: 'Priya Singh', email: 'priya.singh@example.com', phone: '+919876000001' },
+    }),
+    prisma.customer.upsert({
+      where: { email: 'vikram.mehta@example.com' },
+      update: {},
+      create: { name: 'Vikram Mehta', email: 'vikram.mehta@example.com', phone: '+919876000002' },
+    }),
+    prisma.customer.upsert({
+      where: { email: 'sneha.iyer@example.com' },
+      update: {},
+      create: { name: 'Sneha Iyer', email: 'sneha.iyer@example.com', phone: '+919876000003' },
+    }),
+  ]);
+
   console.log('✅ Seed complete!');
-  console.log(`   🚗 ${3} cars | 👤 ${3} drivers | 🏢 ${3} platforms`);
+  console.log(`   🚗 3 cars | 👤 3 drivers | 🏢 3 platforms | 👥 3 customers`);
 }
 
 main()

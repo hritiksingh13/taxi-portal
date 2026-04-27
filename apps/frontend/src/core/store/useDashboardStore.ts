@@ -1,14 +1,40 @@
 // apps/frontend/src/core/store/useDashboardStore.ts
 import { create } from 'zustand';
 
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone: string;
+  _count?: { trips: number };
+  createdAt: string;
+}
+
 export interface Trip {
   id: string;
-  currentLocation: string;
-  destination: string;
+  stops: string[];
   startTime: string;
   estimatedCompletion: string;
+  startDate: string;
+  endDate: string;
+  status: 'Scheduled' | 'Active' | 'Ended' | 'Cancelled';
+  advancePaid: number;
+  fuelExpense: number;
+  pendingAmount: number;
+  shareToken?: string;
   driver: { id: string; name: string; phoneNumber: string; status: string; car?: any };
   agent: { id: string; name: string };
+  customer?: Customer | null;
+  feedback?: Feedback | null;
+}
+
+export interface Feedback {
+  id: string;
+  stars: number;
+  experience: string;
+  reason?: string | null;
+  createdAt: string;
+  tripId: string;
 }
 
 export interface Driver {
@@ -45,7 +71,9 @@ export interface DashboardStats {
   cars: { total: number; active: number; maintenance: number };
   drivers: { total: number; free: number; busy: number; offline: number };
   agents: { total: number };
-  trips: { active: number };
+  trips: { active: number; total: number };
+  customers: { total: number };
+  financials: { totalRevenue: number; totalFuelExpense: number; totalPending: number };
 }
 
 interface DashboardStore {
@@ -54,6 +82,7 @@ interface DashboardStore {
   drivers: Driver[];
   cars: Car[];
   agents: Agent[];
+  customers: Customer[];
   socketConnected: boolean;
 
   setStats: (stats: DashboardStats) => void;
@@ -64,6 +93,7 @@ interface DashboardStore {
   updateDriver: (driver: Driver) => void;
   setCars: (cars: Car[]) => void;
   setAgents: (agents: Agent[]) => void;
+  setCustomers: (customers: Customer[]) => void;
   setSocketConnected: (connected: boolean) => void;
 }
 
@@ -73,6 +103,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   drivers: [],
   cars: [],
   agents: [],
+  customers: [],
   socketConnected: false,
 
   setStats: (stats) => set({ stats }),
@@ -89,7 +120,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
               free: Math.max(0, state.stats.drivers.free - 1),
               busy: state.stats.drivers.busy + 1,
             },
-            trips: { active: state.stats.trips.active + 1 },
+            trips: { ...state.stats.trips, active: state.stats.trips.active + 1 },
           }
         : null,
     })),
@@ -105,7 +136,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
               free: state.stats.drivers.free + 1,
               busy: Math.max(0, state.stats.drivers.busy - 1),
             },
-            trips: { active: Math.max(0, state.stats.trips.active - 1) },
+            trips: { ...state.stats.trips, active: Math.max(0, state.stats.trips.active - 1) },
           }
         : null,
     })),
@@ -117,5 +148,6 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     })),
   setCars: (cars) => set({ cars }),
   setAgents: (agents) => set({ agents }),
+  setCustomers: (customers) => set({ customers }),
   setSocketConnected: (connected) => set({ socketConnected: connected }),
 }));

@@ -2,18 +2,24 @@
 import { Router } from 'express';
 import { TripController } from './trip.controller';
 import { validateRequest } from '../../middleware/validation.middleware';
-import { initiateTripSchema, getTripSchema } from './trip.dto';
+import { initiateTripSchema, updateTripSchema, getTripSchema } from './trip.dto';
 import { catchAsync } from '../../core/exceptions/catchAsync.util';
 
 const router = Router();
 const tripController = new TripController();
 
 router.get('/active', catchAsync(tripController.getActiveTrips));
+router.get('/past', catchAsync(tripController.getPastTrips));
 
 router
   .route('/')
   .get(catchAsync(tripController.getAllTrips))
   .post(validateRequest(initiateTripSchema), catchAsync(tripController.initiateTrip));
+
+router
+  .route('/:id')
+  .get(validateRequest(getTripSchema), catchAsync(tripController.getTripById))
+  .patch(validateRequest(updateTripSchema), catchAsync(tripController.updateTrip));
 
 router.patch('/:id/complete', validateRequest(getTripSchema), catchAsync(tripController.completeTrip));
 
