@@ -1,0 +1,91 @@
+// apps/backend/prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum TransmissionType {
+  Automatic
+  Manual
+}
+
+enum CarStatus {
+  Active
+  Maintenance
+}
+
+enum DriverStatus {
+  Free
+  Busy
+  Offline
+}
+
+model Car {
+  id               String           @id @default(uuid())
+  brand            String
+  licensePlate     String           @unique
+  transmissionType TransmissionType
+  status           CarStatus        @default(Active)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // A car can have multiple drivers assigned over time
+  drivers          Driver[]
+}
+
+model Agent {
+  id             String        @id @default(uuid())
+  name           String        @unique
+  contactDetails String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  driverAgents   DriverAgent[]
+  trips          Trip[]
+}
+
+model Driver {
+  id             String        @id @default(uuid())
+  name           String
+  phoneNumber    String        @unique
+  status         DriverStatus  @default(Offline)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  carId          String?
+  car            Car?          @relation(fields: [carId], references: [id])
+  driverAgents   DriverAgent[]
+  trips          Trip[]
+}
+
+// Explicit Many-to-Many Relationship Table
+model DriverAgent {
+  driverId   String
+  agentId    String
+  driver     Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@id([driverId, agentId])
+}
+
+model Trip {
+  id                  String   @id @default(uuid())
+  currentLocation     String
+  destination         String
+  startTime           DateTime @default(now())
+  estimatedCompletion DateTime
+
+  // Relationships
+  driverId            String
+  driver              Driver   @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  agentId             String
+  agent               Agent    @relation(fields: [agentId], references: [id], onDelete: Restrict)
+}
