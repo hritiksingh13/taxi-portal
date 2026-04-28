@@ -99,9 +99,9 @@ model Trip {
   id                  String     @id @default(uuid())
   stops               String[]
   startTime           DateTime   @default(now())
-  estimatedCompletion DateTime
+  estimatedCompletion DateTime?
   startDate           DateTime   @default(now())
-  endDate             DateTime
+  endDate             DateTime?
   status              TripStatus @default(Active)
 
   // Payment fields

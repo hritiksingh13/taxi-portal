@@ -6,7 +6,7 @@ export const initiateTripSchema = z.object({
     driverId: z.string().uuid('Invalid Driver ID'),
     agentId: z.string().uuid('Invalid Agent ID'),
     stops: z.array(z.string().min(2, 'Each stop must be at least 2 characters')).min(2, 'At least 2 stops required (origin and destination)'),
-    estimatedDurationMinutes: z.number().positive('Duration must be a positive number'),
+    estimatedDurationMinutes: z.number().positive('Duration must be a positive number').optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     customerId: z.string().uuid('Invalid Customer ID').optional().or(z.literal('')),

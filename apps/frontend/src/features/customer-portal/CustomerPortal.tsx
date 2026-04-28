@@ -20,9 +20,9 @@ interface PortalTrip {
   id: string;
   stops: string[];
   startTime: string;
-  estimatedCompletion: string;
+  estimatedCompletion: string | null;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
   status: string;
   advancePaid: number;
   fuelExpense: number;
@@ -195,7 +195,7 @@ export default function CustomerPortal() {
               <p className="label">End Date</p>
               <p className="text-sm text-slate-200 flex items-center gap-1">
                 <Calendar size={12} />
-                {new Date(trip.endDate).toLocaleDateString()}
+                {trip.endDate ? new Date(trip.endDate).toLocaleDateString() : 'TBD'}
               </p>
             </div>
             <div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
 interface CountdownTimerProps {
-  estimatedCompletion: string;
+  estimatedCompletion: string | null;
 }
 
 export function CountdownTimer({ estimatedCompletion }: CountdownTimerProps) {
@@ -10,6 +10,11 @@ export function CountdownTimer({ estimatedCompletion }: CountdownTimerProps) {
   const [isOverdue, setIsOverdue] = useState(false);
 
   useEffect(() => {
+    if (!estimatedCompletion) {
+      setTimeLeft('No estimate');
+      return;
+    }
+
     const targetDate = new Date(estimatedCompletion).getTime();
 
     const tick = () => {

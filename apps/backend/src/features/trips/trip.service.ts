@@ -14,7 +14,7 @@ export class TripService {
     driverId: string;
     agentId: string;
     stops: string[];
-    estimatedDurationMinutes: number;
+    estimatedDurationMinutes?: number;
     startDate?: string;
     endDate?: string;
     customerId?: string;
@@ -40,9 +40,9 @@ export class TripService {
         if (!customerExists) throw new AppError('Customer not found', 404);
       }
 
-      const estimatedCompletion = new Date(
-        Date.now() + data.estimatedDurationMinutes * 60000
-      );
+      const estimatedCompletion = data.estimatedDurationMinutes 
+        ? new Date(Date.now() + data.estimatedDurationMinutes * 60000) 
+        : null;
 
       const startDate = data.startDate ? new Date(data.startDate) : new Date();
       const endDate = data.endDate ? new Date(data.endDate) : estimatedCompletion;

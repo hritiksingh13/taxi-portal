@@ -14,9 +14,9 @@ export interface Trip {
   id: string;
   stops: string[];
   startTime: string;
-  estimatedCompletion: string;
+  estimatedCompletion: string | null;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
   status: 'Scheduled' | 'Active' | 'Ended' | 'Cancelled';
   advancePaid: number;
   fuelExpense: number;

@@ -12,6 +12,8 @@ import {
   ChevronDown,
   X,
   MapPin,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 
 type Tab = 'car' | 'driver' | 'agent' | 'trip';
@@ -102,12 +104,30 @@ function Field({
 
 // ── CAR FORM ──────────────────────────────────────────────────────────────────
 function CarForm() {
-  const { setCars } = useDashboardStore();
+  const { cars, setCars } = useDashboardStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleEdit = (car: any) => {
+    setEditingId(car.id);
+    setForm({ brand: car.brand, licensePlate: car.licensePlate, transmissionType: car.transmissionType, status: car.status });
+    setStatus(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this vehicle?')) return;
+    try {
+      await api.delete(`/cars/${id}`);
+      setCars(cars.filter((c) => c.id !== id));
+      setStatus({ type: 'success', message: 'Vehicle deleted successfully.' });
+    } catch (err: any) {
+      setStatus({ type: 'error', message: err.message });
+    }
+  };
 
   const submit = async () => {
     if (!form.brand || !form.licensePlate || !form.transmissionType) {
@@ -117,11 +137,17 @@ function CarForm() {
     setLoading(true);
     setStatus(null);
     try {
-      await api.post('/cars', form);
+      if (editingId) {
+        await api.patch(`/cars/${editingId}`, form);
+        setStatus({ type: 'success', message: 'Vehicle updated successfully.' });
+      } else {
+        await api.post('/cars', form);
+        setStatus({ type: 'success', message: 'Vehicle registered successfully.' });
+      }
       const res = await api.get('/cars');
       setCars(res.data.data.cars);
+      setEditingId(null);
       setForm({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
-      setStatus({ type: 'success', message: 'Vehicle registered successfully.' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -129,46 +155,98 @@ function CarForm() {
     }
   };
 
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
+    setStatus(null);
+  };
+
   return (
-    <div className="space-y-4">
-      <Field label="Brand / Make *" value={form.brand} onChange={set('brand')} placeholder="e.g. Toyota Camry" />
-      <Field label="License Plate *" value={form.licensePlate} onChange={set('licensePlate')} placeholder="e.g. MH12AB1234" />
-      <Select
-        label="Transmission Type *"
-        value={form.transmissionType}
-        onChange={set('transmissionType')}
-        placeholder="Select transmission..."
-        options={[
-          { value: 'Automatic', label: 'Automatic' },
-          { value: 'Manual', label: 'Manual' },
-        ]}
-      />
-      <Select
-        label="Status"
-        value={form.status}
-        onChange={set('status')}
-        options={[
-          { value: 'Active', label: 'Active' },
-          { value: 'Maintenance', label: 'Under Maintenance' },
-        ]}
-      />
-      {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-        <Plus size={15} />
-        {loading ? 'Registering...' : 'Register Vehicle'}
-      </button>
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <Field label="Brand / Make *" value={form.brand} onChange={set('brand')} placeholder="e.g. Toyota Camry" />
+        <Field label="License Plate *" value={form.licensePlate} onChange={set('licensePlate')} placeholder="e.g. MH12AB1234" />
+        <Select
+          label="Transmission Type *"
+          value={form.transmissionType}
+          onChange={set('transmissionType')}
+          placeholder="Select transmission..."
+          options={[
+            { value: 'Automatic', label: 'Automatic' },
+            { value: 'Manual', label: 'Manual' },
+          ]}
+        />
+        <Select
+          label="Status"
+          value={form.status}
+          onChange={set('status')}
+          options={[
+            { value: 'Active', label: 'Active' },
+            { value: 'Maintenance', label: 'Under Maintenance' },
+          ]}
+        />
+        {status && <Alert type={status.type} message={status.message} />}
+        <div className="flex gap-2">
+          <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
+            {editingId ? <Edit2 size={15} /> : <Plus size={15} />}
+            {loading ? 'Saving...' : editingId ? 'Update Vehicle' : 'Register Vehicle'}
+          </button>
+          {editingId && (
+            <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 font-medium transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {cars.length > 0 && (
+        <div className="border-t border-slate-800/60 pt-6">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Registered Vehicles</p>
+          <div className="space-y-2">
+            {cars.map((car) => (
+              <div key={car.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{car.brand} <span className="text-xs text-slate-500 ml-2">{car.licensePlate}</span></p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(car)} className="p-1.5 text-slate-400 hover:text-emerald-400"><Edit2 size={14} /></button>
+                  <button onClick={() => handleDelete(car.id)} className="p-1.5 text-slate-400 hover:text-rose-400"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── DRIVER FORM ───────────────────────────────────────────────────────────────
 function DriverForm() {
-  const { setDrivers } = useDashboardStore();
+  const { drivers, setDrivers } = useDashboardStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', phoneNumber: '', status: 'Offline' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleEdit = (driver: any) => {
+    setEditingId(driver.id);
+    setForm({ name: driver.name, phoneNumber: driver.phoneNumber, status: driver.status });
+    setStatus(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this driver?')) return;
+    try {
+      await api.delete(`/drivers/${id}`);
+      setDrivers(drivers.filter((d) => d.id !== id));
+      setStatus({ type: 'success', message: 'Driver removed successfully.' });
+    } catch (err: any) {
+      setStatus({ type: 'error', message: err.message });
+    }
+  };
 
   const submit = async () => {
     if (!form.name || !form.phoneNumber) {
@@ -178,11 +256,17 @@ function DriverForm() {
     setLoading(true);
     setStatus(null);
     try {
-      await api.post('/drivers', { name: form.name, phoneNumber: form.phoneNumber, status: form.status });
+      if (editingId) {
+        await api.patch(`/drivers/${editingId}`, form);
+        setStatus({ type: 'success', message: 'Driver updated successfully.' });
+      } else {
+        await api.post('/drivers', { name: form.name, phoneNumber: form.phoneNumber, status: form.status });
+        setStatus({ type: 'success', message: 'Driver onboarded successfully.' });
+      }
       const res = await api.get('/drivers');
       setDrivers(res.data.data.drivers);
+      setEditingId(null);
       setForm({ name: '', phoneNumber: '', status: 'Offline' });
-      setStatus({ type: 'success', message: 'Driver onboarded successfully.' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -190,36 +274,89 @@ function DriverForm() {
     }
   };
 
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ name: '', phoneNumber: '', status: 'Offline' });
+    setStatus(null);
+  };
+
   return (
-    <div className="space-y-4">
-      <Field label="Full Name *" value={form.name} onChange={set('name')} placeholder="e.g. Rahul Sharma" />
-      <Field label="Phone Number *" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="e.g. +91 98765 43210" />
-      <Select
-        label="Initial Status"
-        value={form.status}
-        onChange={set('status')}
-        options={[
-          { value: 'Free', label: 'Free' },
-          { value: 'Offline', label: 'Offline' },
-        ]}
-      />
-      {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-        <Plus size={15} />
-        {loading ? 'Onboarding...' : 'Onboard Driver'}
-      </button>
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <Field label="Full Name *" value={form.name} onChange={set('name')} placeholder="e.g. Rahul Sharma" />
+        <Field label="Phone Number *" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="e.g. +91 98765 43210" />
+        <Select
+          label="Initial Status"
+          value={form.status}
+          onChange={set('status')}
+          options={[
+            { value: 'Free', label: 'Free' },
+            { value: 'Offline', label: 'Offline' },
+          ]}
+        />
+        {status && <Alert type={status.type} message={status.message} />}
+        <div className="flex gap-2">
+          <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
+            {editingId ? <Edit2 size={15} /> : <Plus size={15} />}
+            {loading ? 'Saving...' : editingId ? 'Update Driver' : 'Onboard Driver'}
+          </button>
+          {editingId && (
+            <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 font-medium transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {drivers.length > 0 && (
+        <div className="border-t border-slate-800/60 pt-6">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Onboarded Drivers</p>
+          <div className="space-y-2">
+            {drivers.map((driver) => (
+              <div key={driver.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{driver.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{driver.phoneNumber}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(driver)} className="p-1.5 text-slate-400 hover:text-emerald-400"><Edit2 size={14} /></button>
+                  <button onClick={() => handleDelete(driver.id)} className="p-1.5 text-slate-400 hover:text-rose-400"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── AGENT FORM ────────────────────────────────────────────────────────────────
 function AgentForm() {
-  const { setAgents } = useDashboardStore();
+  const { agents, setAgents } = useDashboardStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', contactDetails: '' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleEdit = (agent: any) => {
+    setEditingId(agent.id);
+    setForm({ name: agent.name, contactDetails: agent.contactDetails });
+    setStatus(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this platform?')) return;
+    try {
+      await api.delete(`/agents/${id}`);
+      setAgents(agents.filter((a) => a.id !== id));
+      setStatus({ type: 'success', message: 'Platform deleted successfully.' });
+    } catch (err: any) {
+      setStatus({ type: 'error', message: err.message });
+    }
+  };
 
   const submit = async () => {
     if (!form.name || !form.contactDetails) {
@@ -229,11 +366,17 @@ function AgentForm() {
     setLoading(true);
     setStatus(null);
     try {
-      await api.post('/agents', form);
+      if (editingId) {
+        await api.patch(`/agents/${editingId}`, form);
+        setStatus({ type: 'success', message: 'Platform updated successfully.' });
+      } else {
+        await api.post('/agents', form);
+        setStatus({ type: 'success', message: 'Platform registered successfully.' });
+      }
       const res = await api.get('/agents');
       setAgents(res.data.data.agents);
+      setEditingId(null);
       setForm({ name: '', contactDetails: '' });
-      setStatus({ type: 'success', message: 'Platform registered successfully.' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -241,24 +384,58 @@ function AgentForm() {
     }
   };
 
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ name: '', contactDetails: '' });
+    setStatus(null);
+  };
+
   return (
-    <div className="space-y-4">
-      <Field label="Platform Name *" value={form.name} onChange={set('name')} placeholder="e.g. Uber, Ola, Private Booking" />
-      <div>
-        <label className="label">Contact Details *</label>
-        <textarea
-          className="input-field resize-none"
-          rows={3}
-          value={form.contactDetails}
-          onChange={(e) => set('contactDetails')(e.target.value)}
-          placeholder="Email, phone, or account manager details..."
-        />
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <Field label="Platform Name *" value={form.name} onChange={set('name')} placeholder="e.g. Uber, Ola, Private Booking" />
+        <div>
+          <label className="label">Contact Details *</label>
+          <textarea
+            className="input-field resize-none"
+            rows={3}
+            value={form.contactDetails}
+            onChange={(e) => set('contactDetails')(e.target.value)}
+            placeholder="Email, phone, or account manager details..."
+          />
+        </div>
+        {status && <Alert type={status.type} message={status.message} />}
+        <div className="flex gap-2">
+          <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
+            {editingId ? <Edit2 size={15} /> : <Plus size={15} />}
+            {loading ? 'Saving...' : editingId ? 'Update Platform' : 'Register Platform'}
+          </button>
+          {editingId && (
+            <button onClick={cancelEdit} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 font-medium transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
-      {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-        <Plus size={15} />
-        {loading ? 'Registering...' : 'Register Platform'}
-      </button>
+
+      {agents.length > 0 && (
+        <div className="border-t border-slate-800/60 pt-6">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Registered Platforms</p>
+          <div className="space-y-2">
+            {agents.map((agent) => (
+              <div key={agent.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{agent.name}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(agent)} className="p-1.5 text-slate-400 hover:text-emerald-400"><Edit2 size={14} /></button>
+                  <button onClick={() => handleDelete(agent.id)} className="p-1.5 text-slate-400 hover:text-rose-400"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -297,12 +474,12 @@ function TripForm() {
 
   const submit = async () => {
     const validStops = stops.filter((s) => s.trim().length >= 2);
-    if (!form.driverId || !form.agentId || validStops.length < 2 || !form.estimatedDurationMinutes) {
-      setStatus({ type: 'error', message: 'Driver, platform, at least 2 stops, and duration are required.' });
+    if (!form.driverId || !form.agentId || validStops.length < 2) {
+      setStatus({ type: 'error', message: 'Driver, platform, and at least 2 stops are required.' });
       return;
     }
-    const duration = Number(form.estimatedDurationMinutes);
-    if (isNaN(duration) || duration <= 0) {
+    const duration = form.estimatedDurationMinutes ? Number(form.estimatedDurationMinutes) : undefined;
+    if (duration !== undefined && (isNaN(duration) || duration <= 0)) {
       setStatus({ type: 'error', message: 'Please enter a valid duration in minutes.' });
       return;
     }
@@ -313,8 +490,8 @@ function TripForm() {
         driverId: form.driverId,
         agentId: form.agentId,
         stops: validStops,
-        estimatedDurationMinutes: duration,
       };
+      if (duration !== undefined) payload.estimatedDurationMinutes = duration;
       if (form.customerId) payload.customerId = form.customerId;
       if (form.startDate) payload.startDate = form.startDate;
       if (form.endDate) payload.endDate = form.endDate;
@@ -405,7 +582,7 @@ function TripForm() {
         <Field label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
       </div>
 
-      <Field label="Estimated Duration (minutes) *" value={form.estimatedDurationMinutes} onChange={set('estimatedDurationMinutes')} type="number" placeholder="e.g. 45" />
+      <Field label="Estimated Duration (minutes)" value={form.estimatedDurationMinutes} onChange={set('estimatedDurationMinutes')} type="number" placeholder="e.g. 45" />
 
       {/* Payment Fields */}
       <div className="border-t border-slate-800/60 pt-4 mt-2">

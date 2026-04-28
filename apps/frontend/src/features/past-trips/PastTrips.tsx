@@ -165,7 +165,7 @@ export default function PastTrips() {
                       <p className="label">Duration</p>
                       <p className="text-sm text-slate-300 flex items-center gap-1">
                         <Calendar size={12} />
-                        {new Date(trip.startDate).toLocaleDateString()} — {new Date(trip.endDate).toLocaleDateString()}
+                        {new Date(trip.startDate).toLocaleDateString()} — {trip.endDate ? new Date(trip.endDate).toLocaleDateString() : 'TBD'}
                       </p>
                     </div>
                   </div>
