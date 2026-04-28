@@ -11,7 +11,7 @@ services:
     buildCommand: >-
       cd ../.. && npm install --include=dev && cd apps/backend &&
       npx prisma generate &&
-      npx prisma db push &&
+      npx prisma db push --accept-data-loss &&
       npm run build
     startCommand: node dist/server.js
     healthCheckPath: /health
