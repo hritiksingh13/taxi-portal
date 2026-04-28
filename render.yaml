@@ -6,8 +6,15 @@ services:
     region: singapore
     plan: free
     rootDir: apps/backend
-    buildCommand: npm install && npx prisma generate && npm run build
+    # Navigate to monorepo root for npm install (workspace hoisting),
+    # then back to backend dir for prisma + build
+    buildCommand: >-
+      cd ../.. && npm install && cd apps/backend &&
+      npx prisma generate &&
+      npx prisma migrate deploy &&
+      npm run build
     startCommand: node dist/server.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,11 +26,16 @@ services:
           property: connectionString
       - key: CLIENT_URL
         value: https://naina-tour-frontend.onrender.com
-      - key: CUSTOMER_PORTAL_URL
-        value: https://naina-tour-customer-portal.onrender.com
-      - key: GMAIL_USER
+      # SMTP (optional — email features degrade gracefully)
+      - key: SMTP_HOST
         sync: false
-      - key: GMAIL_APP_PASSWORD
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
         sync: false
 
   # ── Frontend Manager Portal ──────────────────────────────────────────────────
@@ -31,22 +43,11 @@ services:
     name: naina-tour-frontend
     runtime: static
     rootDir: apps/frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://naina-tour-backend.onrender.com
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
-  # ── Customer Portal ──────────────────────────────────────────────────────────
-  - type: web
-    name: naina-tour-customer-portal
-    runtime: static
-    rootDir: apps/customer-portal
-    buildCommand: npm install && npm run build
+    # Navigate to monorepo root for npm install (workspace hoisting),
+    # then back to frontend dir for build
+    buildCommand: >-
+      cd ../.. && npm install && cd apps/frontend &&
+      npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
@@ -62,3 +63,5 @@ databases:
     plan: free
     databaseName: naina_tour_db
     user: naina_tour
+    version: "16"
+    ipAllowList: []
