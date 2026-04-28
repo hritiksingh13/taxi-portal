@@ -30,7 +30,6 @@ services:
   - type: web
     name: fleetops-frontend
     runtime: static
-    plan: free
     rootDir: apps/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -46,7 +45,6 @@ services:
   - type: web
     name: fleetops-customer-portal
     runtime: static
-    plan: free
     rootDir: apps/customer-portal
     buildCommand: npm install && npm run build
     staticPublishPath: dist
