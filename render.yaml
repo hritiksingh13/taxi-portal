@@ -30,7 +30,6 @@ services:
   - type: web
     name: fleetops-frontend
     runtime: static
-    region: singapore
     plan: free
     rootDir: apps/frontend
     buildCommand: npm install && npm run build
@@ -47,7 +46,6 @@ services:
   - type: web
     name: fleetops-customer-portal
     runtime: static
-    region: singapore
     plan: free
     rootDir: apps/customer-portal
     buildCommand: npm install && npm run build
