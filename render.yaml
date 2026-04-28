@@ -9,7 +9,7 @@ services:
     # Navigate to monorepo root for npm install (workspace hoisting),
     # then back to backend dir for prisma + build
     buildCommand: >-
-      cd ../.. && npm install && cd apps/backend &&
+      cd ../.. && npm install --include=dev && cd apps/backend &&
       npx prisma generate &&
       npx prisma migrate deploy &&
       npm run build
@@ -46,7 +46,7 @@ services:
     # Navigate to monorepo root for npm install (workspace hoisting),
     # then back to frontend dir for build
     buildCommand: >-
-      cd ../.. && npm install && cd apps/frontend &&
+      cd ../.. && npm install --include=dev && cd apps/frontend &&
       npm run build
     staticPublishPath: dist
     envVars:
