@@ -63,5 +63,4 @@ databases:
     plan: free
     databaseName: naina_tour_db
     user: naina_tour
-    version: "16"
     ipAllowList: []
