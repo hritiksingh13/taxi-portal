@@ -1,7 +1,7 @@
 // apps/backend/src/features/trips/trip.service.ts
 import { PrismaClient, Trip } from '@prisma/client';
 import { AppError } from '../../core/exceptions/global.exception';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -47,7 +47,7 @@ export class TripService {
       const startDate = data.startDate ? new Date(data.startDate) : new Date();
       const endDate = data.endDate ? new Date(data.endDate) : estimatedCompletion;
 
-      const shareToken = uuidv4();
+      const shareToken = crypto.randomUUID();
 
       const newTrip = await tx.trip.create({
         data: {
