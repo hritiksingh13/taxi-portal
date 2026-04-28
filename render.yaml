@@ -52,6 +52,8 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://naina-tour-backend.onrender.com
+      - key: VITE_MASTER_PASSWORD
+        sync: false
     routes:
       - type: rewrite
         source: /*

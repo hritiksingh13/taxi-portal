@@ -13,6 +13,8 @@ import { socket } from './core/socket.client';
 import { useDashboardStore } from './core/store/useDashboardStore';
 import { api } from './core/api.client';
 
+import Login from './features/auth/Login';
+
 function ManagerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
@@ -25,14 +27,15 @@ function ManagerLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { addTrip, removeTrip, updateDriver, setSocketConnected } = useDashboardStore();
+  const { authenticated, addTrip, removeTrip, updateDriver, setSocketConnected } = useDashboardStore();
   const location = useLocation();
 
   // Check if we're on the public customer portal
   const isPortal = location.pathname.startsWith('/portal');
+  const isLogin = location.pathname === '/login';
 
   useEffect(() => {
-    if (isPortal) return; // Don't load manager data on public portal
+    if (isPortal || !authenticated) return; // Don't load manager data on public portal or if not logged in
 
     // Preload global data
     const loadInitialData = async () => {
@@ -72,7 +75,7 @@ export default function App() {
       socket.off('telemetry:trip_completed');
       socket.off('telemetry:driver_updated');
     };
-  }, [isPortal]);
+  }, [isPortal, authenticated]);
 
   // Public customer portal — no sidebar
   if (isPortal) {
@@ -81,6 +84,21 @@ export default function App() {
         <Route path="/portal/:shareToken" element={<CustomerPortal />} />
       </Routes>
     );
+  }
+
+  // Not authenticated? Force to login.
+  if (!authenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Once authenticated, prevent going to login page
+  if (isLogin && authenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
@@ -94,6 +112,7 @@ export default function App() {
         <Route path="/customers" element={<CustomerManagement />} />
         <Route path="/cost-analytics" element={<CostAnalytics />} />
         <Route path="/email-updates" element={<EmailUpdates />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </ManagerLayout>
   );

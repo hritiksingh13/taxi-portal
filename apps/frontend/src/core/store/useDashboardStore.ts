@@ -84,6 +84,7 @@ interface DashboardStore {
   agents: Agent[];
   customers: Customer[];
   socketConnected: boolean;
+  authenticated: boolean;
 
   setStats: (stats: DashboardStats) => void;
   setActiveTrips: (trips: Trip[]) => void;
@@ -95,6 +96,7 @@ interface DashboardStore {
   setAgents: (agents: Agent[]) => void;
   setCustomers: (customers: Customer[]) => void;
   setSocketConnected: (connected: boolean) => void;
+  setAuthenticated: (auth: boolean) => void;
 }
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
@@ -105,6 +107,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   agents: [],
   customers: [],
   socketConnected: false,
+  authenticated: localStorage.getItem('taxi_portal_auth') === 'true',
 
   setStats: (stats) => set({ stats }),
   setActiveTrips: (trips) => set({ activeTrips: trips }),
@@ -150,4 +153,5 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   setAgents: (agents) => set({ agents }),
   setCustomers: (customers) => set({ customers }),
   setSocketConnected: (connected) => set({ socketConnected: connected }),
+  setAuthenticated: (auth) => set({ authenticated: auth }),
 }));
