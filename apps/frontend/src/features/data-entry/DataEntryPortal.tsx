@@ -400,7 +400,7 @@ function TripForm() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Start Date" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
         <Field label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
       </div>
@@ -410,7 +410,7 @@ function TripForm() {
       {/* Payment Fields */}
       <div className="border-t border-slate-800/60 pt-4 mt-2">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Payment Details</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Advance Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
           <Field label="Fuel Expense (₹)" value={form.fuelExpense} onChange={set('fuelExpense')} type="number" placeholder="0" />
           <Field label="Pending (₹)" value={form.pendingAmount} onChange={set('pendingAmount')} type="number" placeholder="0" />
@@ -439,7 +439,7 @@ export default function DataEntryPortal() {
   const current = tabs.find((t) => t.id === activeTab)!;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="font-display text-2xl font-bold text-slate-100">Data Entry Portal</h1>
         <p className="text-slate-500 text-sm mt-1">
@@ -449,7 +449,7 @@ export default function DataEntryPortal() {
 
       <div className="max-w-2xl">
         {/* Tab Selector */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}

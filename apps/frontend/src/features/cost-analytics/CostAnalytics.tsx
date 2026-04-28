@@ -189,8 +189,8 @@ export default function CostAnalytics() {
   }));
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-100">Cost Analytics</h1>
           <p className="text-slate-500 text-sm mt-1">Financial overview of your fleet operations</p>
@@ -201,14 +201,14 @@ export default function CostAnalytics() {
       </div>
 
       {/* ─── Summary Cards ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard icon={TrendingUp} label="Total Revenue" value={totalRevenue} color="bg-emerald-500/15 text-emerald-400" prefix="₹" />
         <StatCard icon={Fuel} label="Fuel Expenses" value={totalFuelExpense} color="bg-amber-500/15 text-amber-400" prefix="₹" />
         <StatCard icon={Wallet} label="Pending Amount" value={totalPending} color="bg-rose-500/15 text-rose-400" prefix="₹" />
         <StatCard icon={netProfit >= 0 ? TrendingUp : TrendingDown} label="Net Profit" value={netProfit} color={netProfit >= 0 ? 'bg-fleet-500/15 text-fleet-400' : 'bg-rose-500/15 text-rose-400'} prefix="₹" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* ─── Revenue vs Expenses (Bar Chart) ─────────────────── */}
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
@@ -312,7 +312,7 @@ export default function CostAnalytics() {
         <div className="card p-5">
           <p className="text-sm font-semibold text-slate-300 mb-4">Revenue by Driver</p>
           {driverPieData.length > 0 ? (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
               <ResponsiveContainer width="55%" height={220}>
                 <PieChart>
                   <Pie

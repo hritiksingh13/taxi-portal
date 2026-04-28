@@ -89,8 +89,8 @@ export default function CustomerManagement() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-100">Customer Management</h1>
           <p className="text-slate-500 text-sm mt-1">Manage your customer database</p>
@@ -137,7 +137,8 @@ export default function CustomerManagement() {
 
       {/* Customer Table */}
       <div className="card overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-slate-800/40">
               <th className="table-th">Customer</th>
@@ -205,6 +206,7 @@ export default function CustomerManagement() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

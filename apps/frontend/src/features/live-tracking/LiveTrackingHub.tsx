@@ -39,9 +39,9 @@ export default function LiveTrackingHub() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="font-display text-2xl font-bold text-slate-100">Live Operations Hub</h1>
@@ -80,7 +80,7 @@ export default function LiveTrackingHub() {
               className="card p-5 hover:border-slate-700/80 transition-all duration-200 animate-slide-in"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 {/* Left: Driver & vehicle info */}
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-11 h-11 rounded-xl bg-fleet-500/15 border border-fleet-500/20 flex items-center justify-center flex-shrink-0">
@@ -133,7 +133,7 @@ export default function LiveTrackingHub() {
                 </div>
 
                 {/* Right: Timer, share link, complete button */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-shrink-0">
                   <CountdownTimer estimatedCompletion={trip.estimatedCompletion} />
                   <div className="flex items-center gap-2">
                     {trip.shareToken && (

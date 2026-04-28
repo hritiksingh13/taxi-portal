@@ -57,9 +57,9 @@ export default function Dashboard() {
   const recentCars = cars.slice(0, 5);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-100">Command Center</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -79,7 +79,7 @@ export default function Dashboard() {
       {/* Stats grid */}
       {stats ? (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <StatCard
               icon={Car}
               label="Total Vehicles"
@@ -134,7 +134,7 @@ export default function Dashboard() {
                 </>
               )}
             </div>
-            <div className="flex gap-5 text-xs">
+            <div className="flex flex-wrap gap-3 sm:gap-5 text-xs">
               <span className="flex items-center gap-1.5 text-slate-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Free ({stats.drivers.free})
@@ -151,7 +151,7 @@ export default function Dashboard() {
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="stat-card animate-pulse">
               <div className="h-4 bg-slate-800 rounded w-24" />
@@ -162,14 +162,15 @@ export default function Dashboard() {
       )}
 
       {/* Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Drivers */}
         <div className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-200">Recent Drivers</p>
             <Users size={15} className="text-slate-500" />
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[400px]">
             <thead>
               <tr className="border-b border-slate-800/40">
                 <th className="table-th">Name</th>
@@ -208,6 +209,7 @@ export default function Dashboard() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Recent Cars */}
@@ -216,7 +218,8 @@ export default function Dashboard() {
             <p className="text-sm font-semibold text-slate-200">Fleet Inventory</p>
             <Car size={15} className="text-slate-500" />
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[400px]">
             <thead>
               <tr className="border-b border-slate-800/40">
                 <th className="table-th">Vehicle</th>
@@ -251,6 +254,7 @@ export default function Dashboard() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

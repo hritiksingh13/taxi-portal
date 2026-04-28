@@ -219,7 +219,7 @@ export default function CustomerPortal() {
           <h2 className="font-display text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
             <DollarSign size={16} className="text-fleet-400" /> Payment Summary
           </h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-4 text-center">
               <p className="text-[10px] text-slate-500 uppercase font-semibold mb-1">Advance Paid</p>
               <p className="text-xl font-display font-bold text-emerald-400">₹{trip.advancePaid}</p>

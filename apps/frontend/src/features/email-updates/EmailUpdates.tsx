@@ -79,7 +79,7 @@ export default function EmailUpdates() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="font-display text-2xl font-bold text-slate-100">Email Updates</h1>
         <p className="text-slate-500 text-sm mt-1">Send email campaigns to your customers</p>

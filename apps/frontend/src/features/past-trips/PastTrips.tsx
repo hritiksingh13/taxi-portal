@@ -72,8 +72,8 @@ export default function PastTrips() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-100">Past Trips</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -152,7 +152,7 @@ export default function PastTrips() {
               {/* Expanded details */}
               {expanded === trip.id && (
                 <div className="px-5 pb-5 pt-0 border-t border-slate-800/60">
-                  <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                     <div>
                       <p className="label">Platform</p>
                       <p className="text-sm text-slate-300 flex items-center gap-1"><Building2 size={12} /> {trip.agent.name}</p>
@@ -176,7 +176,7 @@ export default function PastTrips() {
                       <DollarSign size={12} /> Payment Details
                     </p>
                     {editingId === trip.id ? (
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {['advancePaid', 'fuelExpense', 'pendingAmount'].map((field) => (
                           <div key={field}>
                             <label className="text-[10px] text-slate-500 uppercase">{field.replace(/([A-Z])/g, ' $1')}</label>
@@ -188,7 +188,7 @@ export default function PastTrips() {
                             />
                           </div>
                         ))}
-                        <div className="col-span-3 flex gap-2 mt-2">
+                        <div className="col-span-1 sm:col-span-3 flex gap-2 mt-2">
                           <button onClick={() => saveEdit(trip.id)} disabled={saving} className="btn-primary text-xs py-1.5 px-4">
                             {saving ? 'Saving...' : 'Save'}
                           </button>
@@ -196,7 +196,7 @@ export default function PastTrips() {
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <p className="text-[10px] text-slate-500 uppercase">Advance Paid</p>
                           <p className="text-sm font-semibold text-emerald-400">₹{trip.advancePaid}</p>
@@ -209,7 +209,7 @@ export default function PastTrips() {
                           <p className="text-[10px] text-slate-500 uppercase">Pending</p>
                           <p className="text-sm font-semibold text-rose-400">₹{trip.pendingAmount}</p>
                         </div>
-                        <button onClick={() => startEdit(trip)} className="col-span-3 text-xs text-fleet-400 hover:text-fleet-300 font-medium text-left mt-1">
+                        <button onClick={() => startEdit(trip)} className="col-span-1 sm:col-span-3 text-xs text-fleet-400 hover:text-fleet-300 font-medium text-left mt-1">
                           Edit Payment Details
                         </button>
                       </div>
