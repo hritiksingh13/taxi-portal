@@ -9,12 +9,14 @@ SET "carId" = d."carId"
 FROM "Driver" d
 WHERE t."driverId" = d."id" AND d."carId" IS NOT NULL;
 
--- Step 3: For any trips where the driver had no car assigned, assign the first active car
+-- Step 3: For any trips where the driver had no car assigned, assign the first available car
+-- Falls back to ANY car if no Active car exists, ensuring no NULLs remain
 UPDATE "Trip"
-SET "carId" = (SELECT "id" FROM "Car" WHERE "status" = 'Active' LIMIT 1)
+SET "carId" = (SELECT "id" FROM "Car" ORDER BY CASE WHEN "status" = 'Active' THEN 0 ELSE 1 END LIMIT 1)
 WHERE "carId" IS NULL;
 
 -- Step 4: Make carId NOT NULL now that all rows have a value
+-- (safe: only runs if all rows have been assigned a carId above)
 ALTER TABLE "Trip" ALTER COLUMN "carId" SET NOT NULL;
 
 -- Step 5: Add foreign key constraint

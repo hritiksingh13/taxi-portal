@@ -12,8 +12,11 @@ services:
       cd ../.. && npm install --include=dev && cd apps/backend &&
       npx prisma generate &&
       npm run build
-    startCommand: npx prisma migrate deploy && node dist/server.js
-    # startCommand: npx prisma db push --accept-data-loss && node dist/server.js
+    startCommand: >-
+      npx prisma migrate resolve --applied 20260427171506_init 2>/dev/null;
+      npx prisma migrate resolve --applied 20260428094042_optional_duration 2>/dev/null;
+      npx prisma migrate deploy &&
+      node dist/server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
