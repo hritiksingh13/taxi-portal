@@ -9,7 +9,6 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
-  ChevronDown,
   X,
   MapPin,
   Edit2,
@@ -446,8 +445,8 @@ function TripForm() {
         stops: validStops,
       };
       if (form.customerId) payload.customerId = form.customerId;
-      if (form.startDate) payload.startDate = form.startDate;
-      if (form.endDate) payload.endDate = form.endDate;
+      if (form.startDate) payload.startDate = new Date(form.startDate + 'T00:00:00').toISOString();
+      if (form.endDate) payload.endDate = new Date(form.endDate + 'T00:00:00').toISOString();
       if (form.advancePaid) payload.advancePaid = Number(form.advancePaid);
       if (form.fuelExpense) payload.fuelExpense = Number(form.fuelExpense);
       if (form.pendingAmount) payload.pendingAmount = Number(form.pendingAmount);
@@ -565,8 +564,8 @@ function TripForm() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormInput label="Start Date" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
-        <FormInput label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
+        <FormInput label="Start Date" value={form.startDate} onChange={set('startDate')} type="date" />
+        <FormInput label="End Date" value={form.endDate} onChange={set('endDate')} type="date" />
       </div>
 
       {/* Payment Fields */}
