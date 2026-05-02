@@ -59,7 +59,7 @@ const toLocalISOString = (dateString?: string | null) => {
 };
 
 export default function LiveTrackingHub() {
-  const { activeTrips, removeTrip, setActiveTrips, customers } = useDashboardStore();
+  const { activeTrips, removeTrip, setActiveTrips, customers, stats } = useDashboardStore();
   const [completing, setCompleting] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
@@ -192,7 +192,18 @@ export default function LiveTrackingHub() {
         </div>
       </div>
 
-      {activeTrips.length === 0 ? (
+      {stats === null ? (
+        <div className="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
+          <div className="relative w-20 h-20 mb-6">
+            <div className="absolute inset-0 bg-fleet-500/20 rounded-full animate-ping" />
+            <div className="relative flex items-center justify-center w-full h-full bg-slate-800 rounded-full border border-slate-700">
+              <Radio className="w-8 h-8 text-fleet-400 animate-pulse" />
+            </div>
+          </div>
+          <h3 className="text-xl font-display font-bold text-slate-100 mb-2">Connecting to Live Feed</h3>
+          <p className="text-slate-500 text-sm">Syncing active fleet locations...</p>
+        </div>
+      ) : activeTrips.length === 0 ? (
         <div className="card flex flex-col items-center justify-center py-24 text-center">
           <div className="w-16 h-16 rounded-2xl bg-slate-800/60 flex items-center justify-center mb-4">
             <Navigation size={28} className="text-slate-600" />

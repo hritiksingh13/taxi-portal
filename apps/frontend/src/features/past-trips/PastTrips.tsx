@@ -237,13 +237,15 @@ export default function PastTrips() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="card p-5 animate-pulse">
-              <div className="h-4 bg-slate-800 rounded w-48" />
-              <div className="h-3 bg-slate-800 rounded w-32 mt-2" />
+        <div className="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
+          <div className="relative w-20 h-20 mb-6">
+            <div className="absolute inset-0 bg-fleet-500/20 rounded-full animate-ping" />
+            <div className="relative flex items-center justify-center w-full h-full bg-slate-800 rounded-full border border-slate-700">
+              <History className="w-8 h-8 text-fleet-400 animate-pulse" />
             </div>
-          ))}
+          </div>
+          <h3 className="text-xl font-display font-bold text-slate-100 mb-2">Loading Past Trips</h3>
+          <p className="text-slate-500 text-sm">Fetching historical trip data...</p>
         </div>
       ) : trips.length === 0 ? (
         <div className="card flex flex-col items-center justify-center py-24 text-center">
