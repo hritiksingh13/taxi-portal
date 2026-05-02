@@ -10,6 +10,7 @@ import {
   ChevronDown,
   X,
 } from 'lucide-react';
+import { FormInput, FormTextarea } from '../../shared/components/ui/Form';
 
 function Alert({ type, message }: { type: 'success' | 'error'; message: string }) {
   return (
@@ -153,21 +154,17 @@ export default function EmailUpdates() {
           </div>
 
           {/* Subject */}
-          <div>
-            <label className="label">Subject *</label>
-            <input
-              className="input-field"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Your Trip Summary — FleetOps"
-            />
-          </div>
+          <FormInput
+            label="Subject *"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="e.g. Your Trip Summary — FleetOps"
+          />
 
           {/* Body */}
           <div>
-            <label className="label">Email Body *</label>
-            <textarea
-              className="input-field resize-none"
+            <FormTextarea
+              label="Email Body *"
               rows={8}
               value={body}
               onChange={(e) => setBody(e.target.value)}

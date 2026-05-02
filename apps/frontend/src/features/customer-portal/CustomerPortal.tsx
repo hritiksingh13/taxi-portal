@@ -15,6 +15,7 @@ import {
   Clock,
   Phone,
 } from 'lucide-react';
+import { FormInput, FormTextarea } from '../../shared/components/ui/Form';
 
 interface PortalTrip {
   id: string;
@@ -294,27 +295,21 @@ export default function CustomerPortal() {
                   </div>
 
                   {/* Experience */}
-                  <div>
-                    <label className="label">Your Experience *</label>
-                    <textarea
-                      className="input-field resize-none"
-                      rows={4}
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      placeholder="How was your trip experience?"
-                    />
-                  </div>
+                  <FormTextarea
+                    label="Your Experience *"
+                    rows={4}
+                    value={experience}
+                    onChange={(e) => setExperience(e.target.value)}
+                    placeholder="How was your trip experience?"
+                  />
 
                   {/* Reason */}
-                  <div>
-                    <label className="label">Reason (Optional)</label>
-                    <input
-                      className="input-field"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      placeholder="Any specific reason for your rating?"
-                    />
-                  </div>
+                  <FormInput
+                    label="Reason (Optional)"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Any specific reason for your rating?"
+                  />
 
                   {feedbackStatus && (
                     <div className={`flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium ${

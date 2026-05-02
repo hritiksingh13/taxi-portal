@@ -15,6 +15,7 @@ import {
   Check,
   Trash2,
 } from 'lucide-react';
+import { Input } from '../../shared/components/ui/Form';
 
 export default function PastTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -342,9 +343,9 @@ export default function PastTrips() {
                         {['advancePaid', 'fuelExpense', 'pendingAmount'].map((field) => (
                           <div key={field}>
                             <label className="text-[10px] text-slate-500 uppercase">{field.replace(/([A-Z])/g, ' $1')}</label>
-                            <input
+                            <Input
                               type="number"
-                              className="input-field mt-1"
+                              className="mt-1"
                               value={editForm[field]}
                               onChange={(e) => setEditForm((f: any) => ({ ...f, [field]: e.target.value }))}
                             />

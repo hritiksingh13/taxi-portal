@@ -20,7 +20,7 @@ export const updateTripSchema = z.object({
   params: z.object({ id: z.string().uuid('Invalid Trip ID format') }),
   body: z.object({
     stops: z.array(z.string().min(2)).min(2).optional(),
-    estimatedDurationMinutes: z.number().positive().optional(),
+    estimatedDurationMinutes: z.number().positive().nullable().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     advancePaid: z.number().min(0).optional(),

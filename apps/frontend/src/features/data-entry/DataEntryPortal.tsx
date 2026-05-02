@@ -15,6 +15,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
+import { FormInput, FormSelect, FormTextarea, Input, Label, Select as SharedSelect } from '../../shared/components/ui/Form';
 
 type Tab = 'car' | 'driver' | 'agent' | 'trip';
 
@@ -32,74 +33,6 @@ function Alert({ type, message }: { type: 'success' | 'error'; message: string }
   );
 }
 
-function Select({
-  label,
-  value,
-  onChange,
-  options,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label className="label">{label}</label>
-      <div className="relative">
-        <select
-          className="input-field appearance-none pr-9"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
-          )}
-          {options.map((o) => (
-            <option key={o.value} value={o.value} className="bg-slate-800">
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
-        />
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div>
-      <label className="label">{label}</label>
-      <input
-        type={type}
-        className="input-field"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
 
 // ── CAR FORM ──────────────────────────────────────────────────────────────────
 function CarForm() {
@@ -109,7 +42,7 @@ function CarForm() {
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string) => (e: React.ChangeEvent<any>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleEdit = (car: any) => {
     setEditingId(car.id);
@@ -163,9 +96,9 @@ function CarForm() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <Field label="Brand / Make *" value={form.brand} onChange={set('brand')} placeholder="e.g. Toyota Camry" />
-        <Field label="License Plate *" value={form.licensePlate} onChange={set('licensePlate')} placeholder="e.g. MH12AB1234" />
-        <Select
+        <FormInput label="Brand / Make *" value={form.brand} onChange={set('brand')} placeholder="e.g. Toyota Camry" />
+        <FormInput label="License Plate *" value={form.licensePlate} onChange={set('licensePlate')} placeholder="e.g. MH12AB1234" />
+        <FormSelect
           label="Transmission Type *"
           value={form.transmissionType}
           onChange={set('transmissionType')}
@@ -175,7 +108,7 @@ function CarForm() {
             { value: 'Manual', label: 'Manual' },
           ]}
         />
-        <Select
+        <FormSelect
           label="Status"
           value={form.status}
           onChange={set('status')}
@@ -228,7 +161,7 @@ function DriverForm() {
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string) => (e: React.ChangeEvent<any>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleEdit = (driver: any) => {
     setEditingId(driver.id);
@@ -282,9 +215,9 @@ function DriverForm() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <Field label="Full Name *" value={form.name} onChange={set('name')} placeholder="e.g. Rahul Sharma" />
-        <Field label="Phone Number *" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="e.g. +91 98765 43210" />
-        <Select
+        <FormInput label="Full Name *" value={form.name} onChange={set('name')} placeholder="e.g. Rahul Sharma" />
+        <FormInput label="Phone Number *" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="e.g. +91 98765 43210" />
+        <FormSelect
           label="Initial Status"
           value={form.status}
           onChange={set('status')}
@@ -338,7 +271,7 @@ function AgentForm() {
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string) => (e: React.ChangeEvent<any>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleEdit = (agent: any) => {
     setEditingId(agent.id);
@@ -392,17 +325,14 @@ function AgentForm() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <Field label="Platform Name *" value={form.name} onChange={set('name')} placeholder="e.g. Uber, Ola, Private Booking" />
-        <div>
-          <label className="label">Contact Details *</label>
-          <textarea
-            className="input-field resize-none"
-            rows={3}
-            value={form.contactDetails}
-            onChange={(e) => set('contactDetails')(e.target.value)}
-            placeholder="Email, phone, or account manager details..."
-          />
-        </div>
+        <FormInput label="Platform Name *" value={form.name} onChange={set('name')} placeholder="e.g. Uber, Ola, Private Booking" />
+        <FormTextarea
+          label="Contact Details *"
+          rows={3}
+          value={form.contactDetails}
+          onChange={set('contactDetails')}
+          placeholder="Email, phone, or account manager details..."
+        />
         {status && <Alert type={status.type} message={status.message} />}
         <div className="flex gap-2">
           <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
@@ -447,7 +377,6 @@ function TripForm() {
     driverId: '',
     agentId: '',
     customerId: '',
-    estimatedDurationMinutes: '',
     startDate: '',
     endDate: '',
     advancePaid: '',
@@ -462,8 +391,8 @@ function TripForm() {
   const [customerForm, setCustomerForm] = useState({ name: '', phone: '', email: '' });
   const [customerLoading, setCustomerLoading] = useState(false);
 
-  const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
-  const setCust = (k: string) => (v: string) => setCustomerForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string) => (e: React.ChangeEvent<any>) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setCust = (k: string) => (e: React.ChangeEvent<any>) => setCustomerForm((f) => ({ ...f, [k]: e.target.value }));
 
   const freeDrivers = drivers.filter((d) => d.status === 'Free');
 
@@ -508,11 +437,6 @@ function TripForm() {
       setStatus({ type: 'error', message: 'Driver, platform, and at least 2 stops are required.' });
       return;
     }
-    const duration = form.estimatedDurationMinutes ? Number(form.estimatedDurationMinutes) : undefined;
-    if (duration !== undefined && (isNaN(duration) || duration <= 0)) {
-      setStatus({ type: 'error', message: 'Please enter a valid duration in minutes.' });
-      return;
-    }
     setLoading(true);
     setStatus(null);
     try {
@@ -521,7 +445,6 @@ function TripForm() {
         agentId: form.agentId,
         stops: validStops,
       };
-      if (duration !== undefined) payload.estimatedDurationMinutes = duration;
       if (form.customerId) payload.customerId = form.customerId;
       if (form.startDate) payload.startDate = form.startDate;
       if (form.endDate) payload.endDate = form.endDate;
@@ -533,7 +456,7 @@ function TripForm() {
       addTrip(res.data.data.trip);
       setStops(['', '']);
       setForm({
-        driverId: '', agentId: '', customerId: '', estimatedDurationMinutes: '',
+        driverId: '', agentId: '', customerId: '',
         startDate: '', endDate: '', advancePaid: '', fuelExpense: '', pendingAmount: '',
       });
       setStatus({ type: 'success', message: 'Trip initiated! Driver status updated to Busy.' });
@@ -546,7 +469,7 @@ function TripForm() {
 
   return (
     <div className="space-y-4">
-      <Select
+      <FormSelect
         label="Driver *"
         value={form.driverId}
         onChange={set('driverId')}
@@ -561,7 +484,7 @@ function TripForm() {
           No free drivers available. All drivers are currently busy or offline.
         </p>
       )}
-      <Select
+      <FormSelect
         label="Platform / Agent *"
         value={form.agentId}
         onChange={set('agentId')}
@@ -586,10 +509,10 @@ function TripForm() {
         {showNewCustomer ? (
           <div className="space-y-3 animate-fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Name *" value={customerForm.name} onChange={setCust('name')} placeholder="e.g. Priya Singh" />
-              <Field label="Phone *" value={customerForm.phone} onChange={setCust('phone')} placeholder="e.g. +91 98765 43210" />
+              <FormInput label="Name *" value={customerForm.name} onChange={setCust('name')} placeholder="e.g. Priya Singh" />
+              <FormInput label="Phone *" value={customerForm.phone} onChange={setCust('phone')} placeholder="e.g. +91 98765 43210" />
             </div>
-            <Field label="Email (Optional)" value={customerForm.email} onChange={setCust('email')} placeholder="e.g. priya@example.com" type="email" />
+            <FormInput label="Email (Optional)" value={customerForm.email} onChange={setCust('email')} placeholder="e.g. priya@example.com" type="email" />
             <button
               onClick={handleCreateCustomer}
               disabled={customerLoading}
@@ -600,7 +523,7 @@ function TripForm() {
             </button>
           </div>
         ) : (
-          <Select
+          <FormSelect
             label=""
             value={form.customerId}
             onChange={set('customerId')}
@@ -622,8 +545,8 @@ function TripForm() {
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-fleet-500/15 border border-fleet-500/20 flex-shrink-0">
                 <MapPin size={10} className={idx === 0 ? 'text-emerald-400' : idx === stops.length - 1 ? 'text-fleet-400' : 'text-slate-400'} />
               </div>
-              <input
-                className="input-field flex-1"
+              <Input
+                className="flex-1"
                 value={stop}
                 onChange={(e) => updateStop(idx, e.target.value)}
                 placeholder={idx === 0 ? 'Pickup location' : idx === stops.length - 1 ? 'Final destination' : `Stop ${idx + 1}`}
@@ -642,19 +565,17 @@ function TripForm() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Start Date" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
-        <Field label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
+        <FormInput label="Start Date" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
+        <FormInput label="End Date" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
       </div>
-
-      <Field label="Estimated Duration (minutes)" value={form.estimatedDurationMinutes} onChange={set('estimatedDurationMinutes')} type="number" placeholder="e.g. 45" />
 
       {/* Payment Fields */}
       <div className="border-t border-slate-800/60 pt-4 mt-2">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Payment Details</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label="Amount Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
-          <Field label="Fuel Expense (₹)" value={form.fuelExpense} onChange={set('fuelExpense')} type="number" placeholder="0" />
-          <Field label="Pending (₹)" value={form.pendingAmount} onChange={set('pendingAmount')} type="number" placeholder="0" />
+          <FormInput label="Amount Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
+          <FormInput label="Fuel Expense (₹)" value={form.fuelExpense} onChange={set('fuelExpense')} type="number" placeholder="0" />
+          <FormInput label="Pending (₹)" value={form.pendingAmount} onChange={set('pendingAmount')} type="number" placeholder="0" />
         </div>
       </div>
 

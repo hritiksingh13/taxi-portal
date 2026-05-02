@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDashboardStore } from '../../core/store/useDashboardStore';
 import { Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Input } from '../../shared/components/ui/Form';
 
 export default function Login() {
   const { setAuthenticated } = useDashboardStore();
@@ -43,11 +44,12 @@ export default function Login() {
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Lock size={16} className="text-slate-500" />
                 </div>
-                <input
+                <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`input-field pl-10 h-11 sm:h-12 text-base sm:text-lg ${error ? 'border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/10' : ''}`}
+                  className="pl-10 h-11 sm:h-12 text-base sm:text-lg"
+                  error={error}
                   placeholder="••••••••"
                   autoFocus
                 />

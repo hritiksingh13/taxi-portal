@@ -17,6 +17,7 @@ import {
   Plus,
   Clock
 } from 'lucide-react';
+import { Input, Select } from '../../shared/components/ui/Form';
 
 const formatEstimatedEnd = (dateString?: string | null) => {
   if (!dateString) return 'No estimate';
@@ -129,8 +130,8 @@ export default function LiveTrackingHub() {
 
       if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
       if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
-      if (editForm.estimatedDurationMinutes) {
-        payload.estimatedDurationMinutes = Number(editForm.estimatedDurationMinutes);
+      if (editForm.estimatedDurationMinutes !== undefined) {
+        payload.estimatedDurationMinutes = editForm.estimatedDurationMinutes === '' ? null : Number(editForm.estimatedDurationMinutes);
       }
 
       const res = await api.patch(`/trips/${tripId}`, payload);
@@ -355,20 +356,18 @@ export default function LiveTrackingHub() {
                     {/* Customer */}
                     <div>
                       <label className="text-[10px] text-slate-500 uppercase block mb-1">Customer (Optional)</label>
-                      <div className="relative">
-                        <select
-                          className="input-field py-1.5 text-sm appearance-none pr-8"
-                          value={editForm.customerId}
-                          onChange={(e) => setEditForm({ ...editForm, customerId: e.target.value })}
-                        >
-                          <option value="">— None —</option>
-                          {customers.map((c) => (
-                            <option key={c.id} value={c.id} className="bg-slate-800">
-                              {c.name} {c.phone ? `· ${c.phone}` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <Select
+                        className="py-1.5 text-sm"
+                        value={editForm.customerId}
+                        onChange={(e) => setEditForm({ ...editForm, customerId: e.target.value })}
+                      >
+                        <option value="">— None —</option>
+                        {customers.map((c) => (
+                          <option key={c.id} value={c.id} className="bg-slate-800">
+                            {c.name} {c.phone ? `· ${c.phone}` : ''}
+                          </option>
+                        ))}
+                      </Select>
                     </div>
 
                     {/* Stops */}
@@ -377,8 +376,8 @@ export default function LiveTrackingHub() {
                       <div className="space-y-2">
                         {editForm.stops.map((stop: string, idx: number) => (
                           <div key={idx} className="flex items-center gap-2">
-                            <input
-                              className="input-field py-1.5 text-sm"
+                            <Input
+                              className="py-1.5 text-sm"
                               value={stop}
                               onChange={(e) => updateStop(idx, e.target.value)}
                               placeholder={idx === 0 ? 'Pickup' : idx === editForm.stops.length - 1 ? 'Dropoff' : `Stop ${idx + 1}`}
@@ -400,27 +399,27 @@ export default function LiveTrackingHub() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Start Date</label>
-                        <input
+                        <Input
                           type="datetime-local"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.startDate}
                           onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">End Date</label>
-                        <input
+                        <Input
                           type="datetime-local"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.endDate}
                           onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Duration (mins)</label>
-                        <input
+                        <Input
                           type="number"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.estimatedDurationMinutes}
                           onChange={(e) => setEditForm({ ...editForm, estimatedDurationMinutes: e.target.value })}
                           placeholder="e.g. 45"
@@ -432,27 +431,27 @@ export default function LiveTrackingHub() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Amount Paid</label>
-                        <input
+                        <Input
                           type="number"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.advancePaid}
                           onChange={(e) => setEditForm({ ...editForm, advancePaid: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Fuel Expense</label>
-                        <input
+                        <Input
                           type="number"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.fuelExpense}
                           onChange={(e) => setEditForm({ ...editForm, fuelExpense: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Pending Amount</label>
-                        <input
+                        <Input
                           type="number"
-                          className="input-field py-1.5 text-sm"
+                          className="py-1.5 text-sm"
                           value={editForm.pendingAmount}
                           onChange={(e) => setEditForm({ ...editForm, pendingAmount: e.target.value })}
                         />
