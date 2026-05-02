@@ -34,13 +34,11 @@ const formatEstimatedEnd = (dateString?: string | null) => {
     date.getMonth() === tomorrow.getMonth() &&
     date.getFullYear() === tomorrow.getFullYear();
 
-  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   if (isToday) {
-    return `Today, ${time}`;
+    return "Today";
   }
   if (isTomorrow) {
-    return `Tomorrow, ${time}`;
+    return "Tomorrow";
   }
 
   const day = date.getDate();
@@ -51,12 +49,12 @@ const formatEstimatedEnd = (dateString?: string | null) => {
   return `${day}${suffix} ${month}, ${weekday}`;
 };
 
-const toLocalISOString = (dateString?: string | null) => {
+const toLocalDateString = (dateString?: string | null) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
   const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 };
 
 export default function LiveTrackingHub() {
@@ -98,22 +96,14 @@ export default function LiveTrackingHub() {
 
   const startEdit = (trip: Trip) => {
     setEditingId(trip.id);
-    let duration = '';
-    if (trip.estimatedCompletion && trip.startTime) {
-      const start = new Date(trip.startTime).getTime();
-      const end = new Date(trip.estimatedCompletion).getTime();
-      duration = String(Math.max(0, Math.round((end - start) / 60000)));
-    }
-
     setEditForm({
       stops: [...trip.stops],
       advancePaid: trip.advancePaid,
       fuelExpense: trip.fuelExpense,
       pendingAmount: trip.pendingAmount,
       customerId: trip.customer?.id || '',
-      startDate: toLocalISOString(trip.startDate),
-      endDate: toLocalISOString(trip.endDate),
-      estimatedDurationMinutes: duration,
+      startDate: toLocalDateString(trip.startDate),
+      endDate: toLocalDateString(trip.endDate),
     });
   };
 
@@ -128,11 +118,8 @@ export default function LiveTrackingHub() {
         customerId: editForm.customerId || null,
       };
 
-      if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
-      if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
-      if (editForm.estimatedDurationMinutes !== undefined) {
-        payload.estimatedDurationMinutes = editForm.estimatedDurationMinutes === '' ? null : Number(editForm.estimatedDurationMinutes);
-      }
+      if (editForm.startDate) payload.startDate = new Date(editForm.startDate + 'T00:00:00').toISOString();
+      if (editForm.endDate) payload.endDate = new Date(editForm.endDate + 'T00:00:00').toISOString();
 
       const res = await api.patch(`/trips/${tripId}`, payload);
       // Update the active trips in store
@@ -395,12 +382,12 @@ export default function LiveTrackingHub() {
                       </button>
                     </div>
 
-                    {/* Schedule & Duration */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Schedule */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">Start Date</label>
                         <Input
-                          type="datetime-local"
+                          type="date"
                           className="py-1.5 text-sm"
                           value={editForm.startDate}
                           onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
@@ -409,20 +396,10 @@ export default function LiveTrackingHub() {
                       <div>
                         <label className="text-[10px] text-slate-500 uppercase block mb-1">End Date</label>
                         <Input
-                          type="datetime-local"
+                          type="date"
                           className="py-1.5 text-sm"
                           value={editForm.endDate}
                           onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Duration (mins)</label>
-                        <Input
-                          type="number"
-                          className="py-1.5 text-sm"
-                          value={editForm.estimatedDurationMinutes}
-                          onChange={(e) => setEditForm({ ...editForm, estimatedDurationMinutes: e.target.value })}
-                          placeholder="e.g. 45"
                         />
                       </div>
                     </div>
