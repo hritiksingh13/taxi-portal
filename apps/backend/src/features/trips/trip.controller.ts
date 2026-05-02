@@ -39,4 +39,9 @@ export class TripController {
     const trip = await tripService.completeTrip(req.params.id);
     res.status(200).json({ status: 'success', data: { trip } });
   };
+
+  deleteTrip = async (req: Request, res: Response) => {
+    await tripService.deleteTrip(req.params.id);
+    res.status(204).send();
+  };
 }

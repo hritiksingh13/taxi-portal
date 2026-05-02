@@ -122,6 +122,11 @@ export class TripService {
     if (data.stops) updateData.stops = data.stops;
     if (data.startDate) updateData.startDate = new Date(data.startDate);
     if (data.endDate) updateData.endDate = new Date(data.endDate);
+    if (data.estimatedDurationMinutes !== undefined) {
+      updateData.estimatedCompletion = data.estimatedDurationMinutes 
+        ? new Date(Date.now() + data.estimatedDurationMinutes * 60000) 
+        : null;
+    }
     if (data.advancePaid !== undefined) updateData.advancePaid = data.advancePaid;
     if (data.fuelExpense !== undefined) updateData.fuelExpense = data.fuelExpense;
     if (data.pendingAmount !== undefined) updateData.pendingAmount = data.pendingAmount;
@@ -180,5 +185,19 @@ export class TripService {
     });
     if (!trip) throw new AppError('Trip not found. Invalid or expired link.', 404);
     return trip;
+  }
+
+  async deleteTrip(tripId: string): Promise<void> {
+    const trip = await prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new AppError('Trip not found', 404);
+    
+    if (trip.status === 'Active') {
+      await prisma.$transaction(async (tx) => {
+        await tx.trip.delete({ where: { id: tripId } });
+        await tx.driver.update({ where: { id: trip.driverId }, data: { status: 'Free' } });
+      });
+    } else {
+      await prisma.trip.delete({ where: { id: tripId } });
+    }
   }
 }

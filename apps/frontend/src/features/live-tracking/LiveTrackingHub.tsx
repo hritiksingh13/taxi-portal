@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useDashboardStore } from '../../core/store/useDashboardStore';
-import { CountdownTimer } from './CountdownTimer';
+import { useDashboardStore, Trip } from '../../core/store/useDashboardStore';
+
 import { api } from '../../core/api.client';
 import {
   MapPin,
@@ -12,18 +12,75 @@ import {
   Radio,
   Copy,
   Check,
+  Edit2,
+  X,
+  Plus,
+  Clock
 } from 'lucide-react';
 
+const formatEstimatedEnd = (dateString?: string | null) => {
+  if (!dateString) return 'No estimate';
+  const date = new Date(dateString);
+  const today = new Date();
+
+  const isToday = date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = date.getDate() === tomorrow.getDate() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getFullYear() === tomorrow.getFullYear();
+
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isToday) {
+    return `Today, ${time}`;
+  }
+  if (isTomorrow) {
+    return `Tomorrow, ${time}`;
+  }
+
+  const day = date.getDate();
+  const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+  const month = date.toLocaleString('default', { month: 'short' });
+  const weekday = date.toLocaleString('default', { weekday: 'short' });
+
+  return `${day}${suffix} ${month}, ${weekday}`;
+};
+
+const toLocalISOString = (dateString?: string | null) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
 export default function LiveTrackingHub() {
-  const { activeTrips, removeTrip } = useDashboardStore();
+  const { activeTrips, removeTrip, setActiveTrips, customers } = useDashboardStore();
   const [completing, setCompleting] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
 
-  const handleComplete = async (tripId: string) => {
-    setCompleting(tripId);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+
+  const handleComplete = async (trip: Trip, markPaid: boolean) => {
+    setCompleting(trip.id);
     try {
-      await api.patch(`/trips/${tripId}/complete`);
-      removeTrip(tripId);
+      if (markPaid && trip.pendingAmount > 0) {
+        const newAdvance = (trip.advancePaid || 0) + trip.pendingAmount;
+        await api.patch(`/trips/${trip.id}`, {
+          pendingAmount: 0,
+          advancePaid: newAdvance
+        });
+      }
+      await api.patch(`/trips/${trip.id}/complete`);
+      removeTrip(trip.id);
+      setConfirmCompleteId(null);
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -36,6 +93,79 @@ export default function LiveTrackingHub() {
     navigator.clipboard.writeText(link);
     setCopied(tripId);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const startEdit = (trip: Trip) => {
+    setEditingId(trip.id);
+    let duration = '';
+    if (trip.estimatedCompletion && trip.startTime) {
+      const start = new Date(trip.startTime).getTime();
+      const end = new Date(trip.estimatedCompletion).getTime();
+      duration = String(Math.max(0, Math.round((end - start) / 60000)));
+    }
+
+    setEditForm({
+      stops: [...trip.stops],
+      advancePaid: trip.advancePaid,
+      fuelExpense: trip.fuelExpense,
+      pendingAmount: trip.pendingAmount,
+      customerId: trip.customer?.id || '',
+      startDate: toLocalISOString(trip.startDate),
+      endDate: toLocalISOString(trip.endDate),
+      estimatedDurationMinutes: duration,
+    });
+  };
+
+  const saveEdit = async (tripId: string) => {
+    setSaving(true);
+    try {
+      const payload: any = {
+        stops: editForm.stops.filter((s: string) => s.trim().length >= 2),
+        advancePaid: Number(editForm.advancePaid),
+        fuelExpense: Number(editForm.fuelExpense),
+        pendingAmount: Number(editForm.pendingAmount),
+        customerId: editForm.customerId || null,
+      };
+
+      if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
+      if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
+      if (editForm.estimatedDurationMinutes) {
+        payload.estimatedDurationMinutes = Number(editForm.estimatedDurationMinutes);
+      }
+
+      const res = await api.patch(`/trips/${tripId}`, payload);
+      // Update the active trips in store
+      setActiveTrips(
+        useDashboardStore.getState().activeTrips.map((t) =>
+          t.id === tripId ? { ...t, ...res.data.data.trip } : t
+        )
+      );
+      setEditingId(null);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateStop = (index: number, value: string) => {
+    setEditForm((prev: any) => {
+      const newStops = [...prev.stops];
+      newStops[index] = value;
+      return { ...prev, stops: newStops };
+    });
+  };
+
+  const addStop = () => {
+    setEditForm((prev: any) => ({ ...prev, stops: [...prev.stops, ''] }));
+  };
+
+  const removeStop = (index: number) => {
+    if (editForm.stops.length <= 2) return;
+    setEditForm((prev: any) => ({
+      ...prev,
+      stops: prev.stops.filter((_: any, i: number) => i !== index),
+    }));
   };
 
   return (
@@ -134,8 +264,18 @@ export default function LiveTrackingHub() {
 
                 {/* Right: Timer, share link, complete button */}
                 <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-shrink-0">
-                  <CountdownTimer estimatedCompletion={trip.estimatedCompletion} />
+                  <div className="flex items-center gap-1.5 font-mono text-sm font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                    <Clock size={13} />
+                    {formatEstimatedEnd(trip.estimatedCompletion || trip.endDate)}
+                  </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEdit(trip)}
+                      className="flex items-center gap-1 text-xs text-slate-500 hover:text-fleet-300 transition-colors"
+                      title="Edit Trip Details"
+                    >
+                      <Edit2 size={11} /> Edit
+                    </button>
                     {trip.shareToken && (
                       <button
                         onClick={() => copyShareLink(trip.shareToken!, trip.id)}
@@ -146,19 +286,187 @@ export default function LiveTrackingHub() {
                         {copied === trip.id ? 'Copied' : 'Share'}
                       </button>
                     )}
-                    <button
-                      onClick={() => handleComplete(trip.id)}
-                      disabled={completing === trip.id}
-                      className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 
-                                 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 
-                                 px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-50"
-                    >
-                      <CheckCircle size={12} />
-                      {completing === trip.id ? 'Completing...' : 'Mark Complete'}
-                    </button>
+                    {confirmCompleteId === trip.id ? (
+                      <div className="flex items-center gap-1.5 animate-fade-in">
+                        {trip.pendingAmount > 0 && (
+                          <button
+                            onClick={() => handleComplete(trip, true)}
+                            disabled={completing === trip.id}
+                            className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
+                          >
+                            <CheckCircle size={11} />
+                            Complete & Clear Pending (₹{trip.pendingAmount})
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleComplete(trip, false)}
+                          disabled={completing === trip.id}
+                          className="flex items-center gap-1.5 text-[11px] font-medium text-slate-300 bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition-colors whitespace-nowrap"
+                        >
+                          {completing === trip.id && trip.pendingAmount <= 0 ? 'Completing...' : 'Just Complete'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmCompleteId(null)}
+                          disabled={completing === trip.id}
+                          className="text-slate-500 hover:text-slate-300 p-1"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (trip.pendingAmount > 0) {
+                            setConfirmCompleteId(trip.id);
+                          } else {
+                            handleComplete(trip, false);
+                          }
+                        }}
+                        disabled={completing === trip.id}
+                        className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 
+                                   bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 
+                                   px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-50"
+                      >
+                        <CheckCircle size={12} />
+                        {completing === trip.id ? 'Completing...' : 'Mark Complete'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Edit Section */}
+              {editingId === trip.id && (
+                <div className="mt-4 pt-4 border-t border-slate-800/60 animate-fade-in">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Edit Trip Details</p>
+
+                  <div className="space-y-4">
+                    {/* Customer */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 uppercase block mb-1">Customer (Optional)</label>
+                      <div className="relative">
+                        <select
+                          className="input-field py-1.5 text-sm appearance-none pr-8"
+                          value={editForm.customerId}
+                          onChange={(e) => setEditForm({ ...editForm, customerId: e.target.value })}
+                        >
+                          <option value="">— None —</option>
+                          {customers.map((c) => (
+                            <option key={c.id} value={c.id} className="bg-slate-800">
+                              {c.name} {c.phone ? `· ${c.phone}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Stops */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 uppercase block mb-1">Route Stops (min 2)</label>
+                      <div className="space-y-2">
+                        {editForm.stops.map((stop: string, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              className="input-field py-1.5 text-sm"
+                              value={stop}
+                              onChange={(e) => updateStop(idx, e.target.value)}
+                              placeholder={idx === 0 ? 'Pickup' : idx === editForm.stops.length - 1 ? 'Dropoff' : `Stop ${idx + 1}`}
+                            />
+                            {editForm.stops.length > 2 && (
+                              <button onClick={() => removeStop(idx)} className="text-slate-600 hover:text-rose-400 p-1">
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={addStop} className="mt-2 flex items-center gap-1 text-xs text-fleet-400 hover:text-fleet-300">
+                        <Plus size={12} /> Add Stop
+                      </button>
+                    </div>
+
+                    {/* Schedule & Duration */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Start Date</label>
+                        <input
+                          type="datetime-local"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.startDate}
+                          onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">End Date</label>
+                        <input
+                          type="datetime-local"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.endDate}
+                          onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Duration (mins)</label>
+                        <input
+                          type="number"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.estimatedDurationMinutes}
+                          onChange={(e) => setEditForm({ ...editForm, estimatedDurationMinutes: e.target.value })}
+                          placeholder="e.g. 45"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Financials */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Amount Paid</label>
+                        <input
+                          type="number"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.advancePaid}
+                          onChange={(e) => setEditForm({ ...editForm, advancePaid: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Fuel Expense</label>
+                        <input
+                          type="number"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.fuelExpense}
+                          onChange={(e) => setEditForm({ ...editForm, fuelExpense: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Pending Amount</label>
+                        <input
+                          type="number"
+                          className="input-field py-1.5 text-sm"
+                          value={editForm.pendingAmount}
+                          onChange={(e) => setEditForm({ ...editForm, pendingAmount: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={() => saveEdit(trip.id)}
+                        disabled={saving}
+                        className="btn-primary text-xs py-1.5 px-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="btn-secondary text-xs py-1.5 px-4"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -166,3 +474,4 @@ export default function LiveTrackingHub() {
     </div>
   );
 }
+

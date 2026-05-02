@@ -19,7 +19,8 @@ router
 router
   .route('/:id')
   .get(validateRequest(getTripSchema), catchAsync(tripController.getTripById))
-  .patch(validateRequest(updateTripSchema), catchAsync(tripController.updateTrip));
+  .patch(validateRequest(updateTripSchema), catchAsync(tripController.updateTrip))
+  .delete(validateRequest(getTripSchema), catchAsync(tripController.deleteTrip));
 
 router.patch('/:id/complete', validateRequest(getTripSchema), catchAsync(tripController.completeTrip));
 

@@ -113,20 +113,26 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   setActiveTrips: (trips) => set({ activeTrips: trips }),
 
   addTrip: (trip) =>
-    set((state) => ({
-      activeTrips: [trip, ...state.activeTrips],
-      stats: state.stats
-        ? {
-            ...state.stats,
-            drivers: {
-              ...state.stats.drivers,
-              free: Math.max(0, state.stats.drivers.free - 1),
-              busy: state.stats.drivers.busy + 1,
-            },
-            trips: { ...state.stats.trips, active: state.stats.trips.active + 1 },
-          }
-        : null,
-    })),
+    set((state) => {
+      // Prevent adding duplicate trips if already added via API or Socket
+      if (state.activeTrips.some((t) => t.id === trip.id)) {
+        return state;
+      }
+      return {
+        activeTrips: [trip, ...state.activeTrips],
+        stats: state.stats
+          ? {
+              ...state.stats,
+              drivers: {
+                ...state.stats.drivers,
+                free: Math.max(0, state.stats.drivers.free - 1),
+                busy: state.stats.drivers.busy + 1,
+              },
+              trips: { ...state.stats.trips, active: state.stats.trips.active + 1 },
+            }
+          : null,
+      };
+    }),
 
   removeTrip: (tripId) =>
     set((state) => ({

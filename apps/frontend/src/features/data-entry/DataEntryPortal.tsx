@@ -21,11 +21,10 @@ type Tab = 'car' | 'driver' | 'agent' | 'trip';
 function Alert({ type, message }: { type: 'success' | 'error'; message: string }) {
   return (
     <div
-      className={`flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium animate-fade-up ${
-        type === 'success'
+      className={`flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium animate-fade-up ${type === 'success'
           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-      }`}
+        }`}
     >
       {type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
       {message}
@@ -442,7 +441,7 @@ function AgentForm() {
 
 // ── TRIP FORM (REBUILT: multi-stop, dates, customer, payment) ─────────────────
 function TripForm() {
-  const { drivers, agents, customers, addTrip } = useDashboardStore();
+  const { drivers, agents, customers, addTrip, setCustomers } = useDashboardStore();
   const [stops, setStops] = useState<string[]>(['', '']);
   const [form, setForm] = useState({
     driverId: '',
@@ -458,7 +457,13 @@ function TripForm() {
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // New Customer Shortcut State
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ name: '', phone: '', email: '' });
+  const [customerLoading, setCustomerLoading] = useState(false);
+
   const set = (k: string) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const setCust = (k: string) => (v: string) => setCustomerForm((f) => ({ ...f, [k]: v }));
 
   const freeDrivers = drivers.filter((d) => d.status === 'Free');
 
@@ -470,6 +475,31 @@ function TripForm() {
   const removeStop = (index: number) => {
     if (stops.length <= 2) return;
     setStops((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!customerForm.name || !customerForm.phone) {
+      setStatus({ type: 'error', message: 'Customer name and phone are required.' });
+      return;
+    }
+    setCustomerLoading(true);
+    setStatus(null);
+    try {
+      const res = await api.post('/customers', customerForm);
+      const newCustomer = res.data.data.customer;
+
+      const listRes = await api.get('/customers');
+      setCustomers(listRes.data.data.customers);
+
+      setForm((f) => ({ ...f, customerId: newCustomer.id }));
+      setShowNewCustomer(false);
+      setCustomerForm({ name: '', phone: '', email: '' });
+      setStatus({ type: 'success', message: 'Customer added successfully.' });
+    } catch (err: any) {
+      setStatus({ type: 'error', message: err.message });
+    } finally {
+      setCustomerLoading(false);
+    }
   };
 
   const submit = async () => {
@@ -538,16 +568,50 @@ function TripForm() {
         placeholder="Select a platform..."
         options={agents.map((a) => ({ value: a.id, label: a.name }))}
       />
-      <Select
-        label="Customer (Optional)"
-        value={form.customerId}
-        onChange={set('customerId')}
-        placeholder="Select customer..."
-        options={[
-          { value: '', label: '— None —' },
-          ...customers.map((c) => ({ value: c.id, label: `${c.name} · ${c.phone}` })),
-        ]}
-      />
+
+      {/* Customer Selection or Creation */}
+      <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/50">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-semibold text-slate-300">Customer</label>
+          <button
+            onClick={() => setShowNewCustomer(!showNewCustomer)}
+            className="flex items-center gap-1 text-xs text-fleet-400 hover:text-fleet-300 transition-colors font-medium"
+            type="button"
+          >
+            {showNewCustomer ? <X size={12} /> : <Plus size={12} />}
+            {showNewCustomer ? 'Cancel' : 'Add New Customer'}
+          </button>
+        </div>
+
+        {showNewCustomer ? (
+          <div className="space-y-3 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Name *" value={customerForm.name} onChange={setCust('name')} placeholder="e.g. Priya Singh" />
+              <Field label="Phone *" value={customerForm.phone} onChange={setCust('phone')} placeholder="e.g. +91 98765 43210" />
+            </div>
+            <Field label="Email (Optional)" value={customerForm.email} onChange={setCust('email')} placeholder="e.g. priya@example.com" type="email" />
+            <button
+              onClick={handleCreateCustomer}
+              disabled={customerLoading}
+              className="btn-primary w-full text-xs py-2"
+              type="button"
+            >
+              {customerLoading ? 'Saving Customer...' : 'Save & Select Customer'}
+            </button>
+          </div>
+        ) : (
+          <Select
+            label=""
+            value={form.customerId}
+            onChange={set('customerId')}
+            placeholder="Select existing customer..."
+            options={[
+              { value: '', label: '— None —' },
+              ...customers.map((c) => ({ value: c.id, label: `${c.name} · ${c.phone}` })),
+            ]}
+          />
+        )}
+      </div>
 
       {/* Multi-stop */}
       <div>
@@ -565,14 +629,14 @@ function TripForm() {
                 placeholder={idx === 0 ? 'Pickup location' : idx === stops.length - 1 ? 'Final destination' : `Stop ${idx + 1}`}
               />
               {stops.length > 2 && (
-                <button onClick={() => removeStop(idx)} className="text-slate-600 hover:text-rose-400 transition-colors p-1">
+                <button onClick={() => removeStop(idx)} className="text-slate-600 hover:text-rose-400 transition-colors p-1" type="button">
                   <X size={14} />
                 </button>
               )}
             </div>
           ))}
         </div>
-        <button onClick={addStop} className="mt-2 flex items-center gap-1.5 text-xs text-fleet-400 hover:text-fleet-300 font-medium transition-colors">
+        <button onClick={addStop} className="mt-2 flex items-center gap-1.5 text-xs text-fleet-400 hover:text-fleet-300 font-medium transition-colors" type="button">
           <Plus size={12} /> Add Stop
         </button>
       </div>
@@ -588,14 +652,14 @@ function TripForm() {
       <div className="border-t border-slate-800/60 pt-4 mt-2">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Payment Details</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label="Advance Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
+          <Field label="Amount Paid (₹)" value={form.advancePaid} onChange={set('advancePaid')} type="number" placeholder="0" />
           <Field label="Fuel Expense (₹)" value={form.fuelExpense} onChange={set('fuelExpense')} type="number" placeholder="0" />
           <Field label="Pending (₹)" value={form.pendingAmount} onChange={set('pendingAmount')} type="number" placeholder="0" />
         </div>
       </div>
 
       {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading || freeDrivers.length === 0} className="btn-primary w-full flex items-center justify-center gap-2">
+      <button onClick={submit} disabled={loading || freeDrivers.length === 0} className="btn-primary w-full flex items-center justify-center gap-2" type="button">
         <Navigation size={15} />
         {loading ? 'Initiating Trip...' : 'Initiate Trip'}
       </button>
@@ -631,11 +695,10 @@ export default function DataEntryPortal() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center gap-2 px-3 py-3.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${
-                activeTab === id
+              className={`flex flex-col items-center gap-2 px-3 py-3.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${activeTab === id
                   ? 'bg-fleet-500/15 border-fleet-500/30 text-fleet-300'
                   : 'bg-slate-900/60 border-slate-800/60 text-slate-500 hover:text-slate-300 hover:border-slate-700'
-              }`}
+                }`}
             >
               <Icon size={18} />
               <span className="text-center leading-tight">{label}</span>
