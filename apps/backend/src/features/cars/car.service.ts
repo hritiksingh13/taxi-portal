@@ -8,18 +8,12 @@ export class CarService {
   async getAllCars(): Promise<Car[]> {
     return await prisma.car.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        drivers: {
-          select: { id: true, name: true, status: true },
-        },
-      },
     });
   }
 
   async getCarById(id: string): Promise<Car> {
     const car = await prisma.car.findUnique({
       where: { id },
-      include: { drivers: true },
     });
 
     if (!car) {

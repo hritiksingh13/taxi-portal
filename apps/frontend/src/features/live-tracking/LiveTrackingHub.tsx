@@ -62,7 +62,8 @@ const toLocalISOString = (dateString?: string | null) => {
 };
 
 export default function LiveTrackingHub() {
-  const { activeTrips, removeTrip, setActiveTrips, customers, stats } = useDashboardStore();
+  const { activeTrips, removeTrip, setActiveTrips, customers, cars, stats } = useDashboardStore();
+  const activeCars = cars.filter((c) => c.status === 'Active');
   const [completing, setCompleting] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
@@ -102,6 +103,7 @@ export default function LiveTrackingHub() {
     setEditingId(trip.id);
     setEditForm({
       stops: [...trip.stops],
+      carId: trip.car?.id || '',
       advancePaid: trip.advancePaid,
       fuelExpense: trip.fuelExpense,
       pendingAmount: trip.pendingAmount,
@@ -121,6 +123,8 @@ export default function LiveTrackingHub() {
         pendingAmount: Number(editForm.pendingAmount),
         customerId: editForm.customerId || null,
       };
+
+      if (editForm.carId) payload.carId = editForm.carId;
 
       if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
       if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
@@ -224,11 +228,11 @@ export default function LiveTrackingHub() {
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-100 text-sm">{trip.driver.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {trip.driver.car && (
+                      {trip.car && (
                         <span className="flex items-center gap-1 text-xs text-slate-500">
                           <Car size={10} />
-                          {trip.driver.car.brand}
-                          <span className="font-mono text-slate-600">{trip.driver.car.licensePlate}</span>
+                          {trip.car.brand}
+                          <span className="font-mono text-slate-600">{trip.car.licensePlate}</span>
                         </span>
                       )}
                       {trip.customer && (
@@ -260,7 +264,15 @@ export default function LiveTrackingHub() {
                     </span>
                     <span className="text-slate-700">·</span>
                     <span className="text-xs text-slate-500">
-                      Started {new Date(trip.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      Started {(() => {
+                        const d = new Date(trip.startTime);
+                        const day = d.getDate();
+                        const suffix = [11,12,13].includes(day) ? 'th' : ['st','nd','rd'][(day % 10) - 1] || 'th';
+                        const month = d.toLocaleString('en-IN', { month: 'short' });
+                        const weekday = d.toLocaleString('en-IN', { weekday: 'short' });
+                        const time = d.toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        return `${day}${suffix} ${month}, ${weekday} ${time}`;
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -368,6 +380,22 @@ export default function LiveTrackingHub() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Edit Trip Details</p>
 
                   <div className="space-y-4">
+                    {/* Vehicle */}
+                    <div>
+                      <label className="text-[10px] text-slate-500 uppercase block mb-1">Vehicle</label>
+                      <Select
+                        className="py-1.5 text-sm"
+                        value={editForm.carId}
+                        onChange={(e) => setEditForm({ ...editForm, carId: e.target.value })}
+                      >
+                        {activeCars.map((c) => (
+                          <option key={c.id} value={c.id} className="bg-slate-800">
+                            {c.brand} · {c.licensePlate} · {c.transmissionType}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+
                     {/* Customer */}
                     <div>
                       <label className="text-[10px] text-slate-500 uppercase block mb-1">Customer (Optional)</label>

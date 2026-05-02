@@ -6,7 +6,6 @@ import {
   createDriverSchema,
   updateDriverSchema,
   getDriverSchema,
-  assignCarSchema,
   assignAgentSchema,
 } from './driver.dto';
 import { catchAsync } from '../../core/exceptions/catchAsync.util';
@@ -29,7 +28,6 @@ router
   .delete(validateRequest(getDriverSchema), catchAsync(driverController.deleteDriver));
 
 // Assignment endpoints
-router.post('/:id/assign-car', validateRequest(assignCarSchema), catchAsync(driverController.assignCar));
 router.post('/:id/assign-agent', validateRequest(assignAgentSchema), catchAsync(driverController.assignAgent));
 router.delete('/:id/remove-agent', validateRequest(assignAgentSchema), catchAsync(driverController.removeAgent));
 

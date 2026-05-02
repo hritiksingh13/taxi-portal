@@ -13,7 +13,6 @@ export class DriverService {
     return await prisma.driver.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        car: { select: { id: true, brand: true, licensePlate: true, status: true } },
         driverAgents: {
           include: { agent: { select: { id: true, name: true } } },
         },
@@ -25,7 +24,6 @@ export class DriverService {
     const driver = await prisma.driver.findUnique({
       where: { id },
       include: {
-        car: true,
         driverAgents: { include: { agent: true } },
         trips: { orderBy: { startTime: 'desc' }, take: 5 },
       },
@@ -39,12 +37,11 @@ export class DriverService {
     const [free, busy, offline] = await Promise.all([
       prisma.driver.findMany({
         where: { status: 'Free' },
-        include: { car: true, driverAgents: { include: { agent: true } } },
+        include: { driverAgents: { include: { agent: true } } },
       }),
       prisma.driver.findMany({
         where: { status: 'Busy' },
         include: {
-          car: true,
           driverAgents: { include: { agent: true } },
           trips: {
             orderBy: { startTime: 'desc' },
@@ -55,7 +52,6 @@ export class DriverService {
       }),
       prisma.driver.findMany({
         where: { status: 'Offline' },
-        include: { car: true },
       }),
     ]);
 
@@ -80,22 +76,6 @@ export class DriverService {
     const driver = await prisma.driver.findUnique({ where: { id } });
     if (!driver) throw new AppError('Driver not found', 404);
     await prisma.driver.delete({ where: { id } });
-  }
-
-  async assignCar(driverId: string, carId: string): Promise<Driver> {
-    const car = await prisma.car.findUnique({ where: { id: carId } });
-    if (!car || car.status !== 'Active') {
-      throw new AppError('Car is unavailable or in maintenance', 400);
-    }
-
-    const updatedDriver = await prisma.driver.update({
-      where: { id: driverId },
-      data: { carId },
-      include: { car: true, driverAgents: { include: { agent: true } } },
-    });
-
-    if (_io) _io.to('dashboard_room').emit('telemetry:driver_updated', updatedDriver);
-    return updatedDriver;
   }
 
   async assignAgent(driverId: string, agentId: string): Promise<void> {

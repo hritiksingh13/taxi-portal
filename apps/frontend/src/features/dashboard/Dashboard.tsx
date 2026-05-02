@@ -175,7 +175,7 @@ export default function Dashboard() {
               <tr className="border-b border-slate-800/40">
                 <th className="table-th">Name</th>
                 <th className="table-th">Status</th>
-                <th className="table-th">Vehicle</th>
+                <th className="table-th">Phone</th>
               </tr>
             </thead>
             <tbody>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td className="table-td text-slate-400">
-                      {d.car ? d.car.brand : <span className="text-slate-600">Unassigned</span>}
+                      {d.phoneNumber}
                     </td>
                   </tr>
                 ))

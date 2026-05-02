@@ -12,6 +12,7 @@ export const setIo = (io: any) => { _io = io; };
 export class TripService {
   async initiateTrip(data: {
     driverId: string;
+    carId: string;
     agentId: string;
     stops: string[];
     estimatedDurationMinutes?: number;
@@ -34,6 +35,11 @@ export class TripService {
       const agentExists = await tx.agent.findUnique({ where: { id: data.agentId } });
       if (!agentExists) throw new AppError('Agent not found', 404);
 
+      // Verify the car exists and is active
+      const car = await tx.car.findUnique({ where: { id: data.carId } });
+      if (!car) throw new AppError('Vehicle not found', 404);
+      if (car.status !== 'Active') throw new AppError('Vehicle is not active (currently under maintenance)', 400);
+
       // Verify customer if provided
       if (data.customerId) {
         const customerExists = await tx.customer.findUnique({ where: { id: data.customerId } });
@@ -52,6 +58,7 @@ export class TripService {
       const newTrip = await tx.trip.create({
         data: {
           driverId: data.driverId,
+          carId: data.carId,
           agentId: data.agentId,
           stops: data.stops,
           estimatedCompletion,
@@ -64,7 +71,7 @@ export class TripService {
           shareToken,
           status: 'Active',
         },
-        include: { driver: true, agent: true, customer: true },
+        include: { driver: true, car: true, agent: true, customer: true },
       });
 
       // Atomically mark driver as Busy
@@ -85,14 +92,14 @@ export class TripService {
   async getActiveTrips(): Promise<Trip[]> {
     return await prisma.trip.findMany({
       where: { status: 'Active' },
-      include: { driver: { include: { car: true } }, agent: true, customer: true },
+      include: { driver: true, car: true, agent: true, customer: true },
       orderBy: { startTime: 'desc' },
     });
   }
 
   async getAllTrips(): Promise<Trip[]> {
     return await prisma.trip.findMany({
-      include: { driver: true, agent: true, customer: true, feedback: true },
+      include: { driver: true, car: true, agent: true, customer: true, feedback: true },
       orderBy: { startTime: 'desc' },
     });
   }
@@ -100,7 +107,7 @@ export class TripService {
   async getPastTrips(): Promise<Trip[]> {
     return await prisma.trip.findMany({
       where: { status: { in: ['Ended', 'Cancelled'] } },
-      include: { driver: true, agent: true, customer: true, feedback: true },
+      include: { driver: true, car: true, agent: true, customer: true, feedback: true },
       orderBy: { startTime: 'desc' },
     });
   }
@@ -108,7 +115,7 @@ export class TripService {
   async getTripById(tripId: string): Promise<Trip> {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
-      include: { driver: true, agent: true, customer: true, feedback: true },
+      include: { driver: true, car: true, agent: true, customer: true, feedback: true },
     });
     if (!trip) throw new AppError('Trip not found', 404);
     return trip;
@@ -131,6 +138,7 @@ export class TripService {
     if (data.fuelExpense !== undefined) updateData.fuelExpense = data.fuelExpense;
     if (data.pendingAmount !== undefined) updateData.pendingAmount = data.pendingAmount;
     if (data.status) updateData.status = data.status;
+    if (data.carId) updateData.carId = data.carId;
     if (data.customerId !== undefined) {
       updateData.customerId = data.customerId || null;
     }
@@ -138,7 +146,7 @@ export class TripService {
     const updatedTrip = await prisma.trip.update({
       where: { id: tripId },
       data: updateData,
-      include: { driver: true, agent: true, customer: true, feedback: true },
+      include: { driver: true, car: true, agent: true, customer: true, feedback: true },
     });
 
     return updatedTrip;
@@ -165,7 +173,7 @@ export class TripService {
 
     const updatedTrip = await prisma.trip.findUnique({
       where: { id: tripId },
-      include: { driver: true, agent: true, customer: true },
+      include: { driver: true, car: true, agent: true, customer: true },
     });
 
     if (_io) _io.to('dashboard_room').emit('telemetry:trip_completed', updatedTrip);
@@ -178,6 +186,7 @@ export class TripService {
       where: { shareToken },
       include: {
         driver: { select: { name: true, phoneNumber: true } },
+        car: { select: { brand: true, licensePlate: true } },
         agent: { select: { name: true } },
         customer: true,
         feedback: true,

@@ -22,7 +22,8 @@ export interface Trip {
   fuelExpense: number;
   pendingAmount: number;
   shareToken?: string;
-  driver: { id: string; name: string; phoneNumber: string; status: string; car?: any };
+  driver: { id: string; name: string; phoneNumber: string; status: string };
+  car: { id: string; brand: string; licensePlate: string; transmissionType: string; status: string };
   agent: { id: string; name: string };
   customer?: Customer | null;
   feedback?: Feedback | null;
@@ -42,7 +43,6 @@ export interface Driver {
   name: string;
   phoneNumber: string;
   status: 'Free' | 'Busy' | 'Offline';
-  car?: { id: string; brand: string; licensePlate: string; status: string } | null;
   driverAgents?: { agent: { id: string; name: string }; assignedAt: string }[];
   trips?: Trip[];
   createdAt: string;

@@ -4,6 +4,7 @@ import { z } from 'zod';
 export const initiateTripSchema = z.object({
   body: z.object({
     driverId: z.string().uuid('Invalid Driver ID'),
+    carId: z.string().uuid('Invalid Car ID'),
     agentId: z.string().uuid('Invalid Agent ID'),
     stops: z.array(z.string().min(2, 'Each stop must be at least 2 characters')).min(2, 'At least 2 stops required (origin and destination)'),
     estimatedDurationMinutes: z.number().positive('Duration must be a positive number').optional(),
@@ -23,6 +24,7 @@ export const updateTripSchema = z.object({
     estimatedDurationMinutes: z.number().positive().nullable().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
+    carId: z.string().uuid('Invalid Car ID').optional(),
     advancePaid: z.number().min(0).optional(),
     fuelExpense: z.number().min(0).optional(),
     pendingAmount: z.number().min(0).optional(),

@@ -371,10 +371,11 @@ function AgentForm() {
 
 // ── TRIP FORM (REBUILT: multi-stop, dates, customer, payment) ─────────────────
 function TripForm() {
-  const { drivers, agents, customers, addTrip, setCustomers } = useDashboardStore();
+  const { drivers, cars, agents, customers, addTrip, setCustomers } = useDashboardStore();
   const [stops, setStops] = useState<string[]>(['', '']);
   const [form, setForm] = useState({
     driverId: '',
+    carId: '',
     agentId: '',
     customerId: '',
     startDate: '',
@@ -395,6 +396,7 @@ function TripForm() {
   const setCust = (k: string) => (e: React.ChangeEvent<any>) => setCustomerForm((f) => ({ ...f, [k]: e.target.value }));
 
   const freeDrivers = drivers.filter((d) => d.status === 'Free');
+  const activeCars = cars.filter((c) => c.status === 'Active');
 
   const updateStop = (index: number, value: string) => {
     setStops((prev) => prev.map((s, i) => (i === index ? value : s)));
@@ -433,8 +435,8 @@ function TripForm() {
 
   const submit = async () => {
     const validStops = stops.filter((s) => s.trim().length >= 2);
-    if (!form.driverId || !form.agentId || validStops.length < 2) {
-      setStatus({ type: 'error', message: 'Driver, platform, and at least 2 stops are required.' });
+    if (!form.driverId || !form.carId || !form.agentId || validStops.length < 2) {
+      setStatus({ type: 'error', message: 'Driver, vehicle, platform, and at least 2 stops are required.' });
       return;
     }
     setLoading(true);
@@ -442,6 +444,7 @@ function TripForm() {
     try {
       const payload: any = {
         driverId: form.driverId,
+        carId: form.carId,
         agentId: form.agentId,
         stops: validStops,
       };
@@ -454,9 +457,10 @@ function TripForm() {
 
       const res = await api.post('/trips', payload);
       addTrip(res.data.data.trip);
+
       setStops(['', '']);
       setForm({
-        driverId: '', agentId: '', customerId: '',
+        driverId: '', carId: '', agentId: '', customerId: '',
         startDate: '', endDate: '', advancePaid: '', fuelExpense: '', pendingAmount: '',
       });
       setStatus({ type: 'success', message: 'Trip initiated! Driver status updated to Busy.' });
@@ -476,12 +480,27 @@ function TripForm() {
         placeholder="Select a free driver..."
         options={freeDrivers.map((d) => ({
           value: d.id,
-          label: `${d.name}${d.car ? ` · ${d.car.brand}` : ''}`,
+          label: d.name,
         }))}
       />
       {freeDrivers.length === 0 && (
         <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
           No free drivers available. All drivers are currently busy or offline.
+        </p>
+      )}
+      <FormSelect
+        label="Vehicle *"
+        value={form.carId}
+        onChange={set('carId')}
+        placeholder="Select a vehicle..."
+        options={activeCars.map((c) => ({
+          value: c.id,
+          label: `${c.brand} · ${c.licensePlate} · ${c.transmissionType}`,
+        }))}
+      />
+      {activeCars.length === 0 && (
+        <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
+          No active vehicles registered. Register a vehicle first.
         </p>
       )}
       <FormSelect
@@ -588,7 +607,7 @@ function TripForm() {
       </div>
 
       {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading || freeDrivers.length === 0} className="btn-primary w-full flex items-center justify-center gap-2" type="button">
+      <button onClick={submit} disabled={loading || freeDrivers.length === 0 || activeCars.length === 0} className="btn-primary w-full flex items-center justify-center gap-2" type="button">
         <Navigation size={15} />
         {loading ? 'Initiating Trip...' : 'Initiate Trip'}
       </button>

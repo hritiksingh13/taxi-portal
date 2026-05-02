@@ -22,11 +22,6 @@ export const getDriverSchema = z.object({
   params: z.object({ id: z.string().uuid('Invalid Driver ID format') }),
 });
 
-export const assignCarSchema = z.object({
-  params: z.object({ id: z.string().uuid('Invalid Driver ID format') }),
-  body: z.object({ carId: z.string().uuid('Invalid Car ID format') }),
-});
-
 export const assignAgentSchema = z.object({
   params: z.object({ id: z.string().uuid('Invalid Driver ID format') }),
   body: z.object({ agentId: z.string().uuid('Invalid Agent ID format') }),

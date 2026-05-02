@@ -41,8 +41,8 @@ model Car {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  // A car can have multiple drivers assigned over time
-  drivers          Driver[]
+  // A car can be used in multiple trips
+  trips            Trip[]
 }
 
 model Agent {
@@ -66,8 +66,6 @@ model Driver {
   updatedAt      DateTime      @updatedAt
 
   // Relationships
-  carId          String?
-  car            Car?          @relation(fields: [carId], references: [id])
   driverAgents   DriverAgent[]
   trips          Trip[]
 }
@@ -115,6 +113,8 @@ model Trip {
   // Relationships
   driverId            String
   driver              Driver     @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  carId               String
+  car                 Car        @relation(fields: [carId], references: [id], onDelete: Restrict)
   agentId             String
   agent               Agent      @relation(fields: [agentId], references: [id], onDelete: Restrict)
   customerId          String?

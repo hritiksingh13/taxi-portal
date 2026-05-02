@@ -49,12 +49,12 @@ async function main() {
     prisma.driver.upsert({
       where: { phoneNumber: '+919876543210' },
       update: {},
-      create: { name: 'Rahul Sharma', phoneNumber: '+919876543210', status: 'Free', carId: camry.id },
+      create: { name: 'Rahul Sharma', phoneNumber: '+919876543210', status: 'Free' },
     }),
     prisma.driver.upsert({
       where: { phoneNumber: '+919812345678' },
       update: {},
-      create: { name: 'Priya Nair', phoneNumber: '+919812345678', status: 'Free', carId: civic.id },
+      create: { name: 'Priya Nair', phoneNumber: '+919812345678', status: 'Free' },
     }),
     prisma.driver.upsert({
       where: { phoneNumber: '+919898765432' },

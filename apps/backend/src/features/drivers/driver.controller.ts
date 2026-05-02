@@ -35,11 +35,6 @@ export class DriverController {
     res.status(204).json({ status: 'success', data: null });
   };
 
-  assignCar = async (req: Request, res: Response) => {
-    const driver = await driverService.assignCar(req.params.id, req.body.carId);
-    res.status(200).json({ status: 'success', data: { driver } });
-  };
-
   assignAgent = async (req: Request, res: Response) => {
     await driverService.assignAgent(req.params.id, req.body.agentId);
     res.status(200).json({ status: 'success', message: 'Driver linked to platform successfully' });
