@@ -14,7 +14,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { FormInput, FormSelect, FormTextarea, Input, Label, Select as SharedSelect } from '../../shared/components/ui/Form';
+import { FormInput, FormSelect, FormTextarea, Input } from '../../shared/components/ui/Form';
 
 type Tab = 'car' | 'driver' | 'agent' | 'trip';
 
