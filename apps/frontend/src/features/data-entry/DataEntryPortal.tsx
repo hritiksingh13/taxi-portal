@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { FormInput, FormSelect, FormTextarea, Input } from '../../shared/components/ui/Form';
+import { DateTimeInput } from '../../shared/components/ui/DateTimeInput';
 
 type Tab = 'car' | 'driver' | 'agent' | 'trip';
 
@@ -22,8 +23,8 @@ function Alert({ type, message }: { type: 'success' | 'error'; message: string }
   return (
     <div
       className={`flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium animate-fade-up ${type === 'success'
-          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-          : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
         }`}
     >
       {type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
@@ -445,8 +446,8 @@ function TripForm() {
         stops: validStops,
       };
       if (form.customerId) payload.customerId = form.customerId;
-      if (form.startDate) payload.startDate = new Date(form.startDate + 'T00:00:00').toISOString();
-      if (form.endDate) payload.endDate = new Date(form.endDate + 'T00:00:00').toISOString();
+      if (form.startDate) payload.startDate = new Date(form.startDate).toISOString();
+      if (form.endDate) payload.endDate = new Date(form.endDate).toISOString();
       if (form.advancePaid) payload.advancePaid = Number(form.advancePaid);
       if (form.fuelExpense) payload.fuelExpense = Number(form.fuelExpense);
       if (form.pendingAmount) payload.pendingAmount = Number(form.pendingAmount);
@@ -564,8 +565,16 @@ function TripForm() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormInput label="Start Date" value={form.startDate} onChange={set('startDate')} type="date" />
-        <FormInput label="End Date" value={form.endDate} onChange={set('endDate')} type="date" />
+        <DateTimeInput
+          label="Start Date & Time"
+          value={form.startDate}
+          onChange={(val) => setForm({ ...form, startDate: val })}
+        />
+        <DateTimeInput
+          label="End Date & Time"
+          value={form.endDate}
+          onChange={(val) => setForm({ ...form, endDate: val })}
+        />
       </div>
 
       {/* Payment Fields */}
@@ -608,7 +617,7 @@ export default function DataEntryPortal() {
         </p>
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         {/* Tab Selector */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
           {tabs.map(({ id, label, icon: Icon }) => (
@@ -616,8 +625,8 @@ export default function DataEntryPortal() {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex flex-col items-center gap-2 px-3 py-3.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${activeTab === id
-                  ? 'bg-fleet-500/15 border-fleet-500/30 text-fleet-300'
-                  : 'bg-slate-900/60 border-slate-800/60 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                ? 'bg-fleet-500/15 border-fleet-500/30 text-fleet-300'
+                : 'bg-slate-900/60 border-slate-800/60 text-slate-500 hover:text-slate-300 hover:border-slate-700'
                 }`}
             >
               <Icon size={18} />
@@ -627,7 +636,7 @@ export default function DataEntryPortal() {
         </div>
 
         {/* Form Panel */}
-        <div className="card p-6">
+        <div className="card p-4">
           <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-800/60">
             <div className="w-10 h-10 rounded-xl bg-fleet-500/15 border border-fleet-500/20 flex items-center justify-center">
               <current.icon size={18} className="text-fleet-400" />

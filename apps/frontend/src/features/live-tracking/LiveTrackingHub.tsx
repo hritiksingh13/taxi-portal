@@ -15,9 +15,11 @@ import {
   Edit2,
   X,
   Plus,
-  Clock
+  Clock,
+  Wallet
 } from 'lucide-react';
 import { Input, Select } from '../../shared/components/ui/Form';
+import { DateTimeInput } from '../../shared/components/ui/DateTimeInput';
 
 const formatEstimatedEnd = (dateString?: string | null) => {
   if (!dateString) return 'No estimate';
@@ -34,11 +36,13 @@ const formatEstimatedEnd = (dateString?: string | null) => {
     date.getMonth() === tomorrow.getMonth() &&
     date.getFullYear() === tomorrow.getFullYear();
 
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   if (isToday) {
-    return "Today";
+    return `Today, ${time}`;
   }
   if (isTomorrow) {
-    return "Tomorrow";
+    return `Tomorrow, ${time}`;
   }
 
   const day = date.getDate();
@@ -49,12 +53,12 @@ const formatEstimatedEnd = (dateString?: string | null) => {
   return `${day}${suffix} ${month}, ${weekday}`;
 };
 
-const toLocalDateString = (dateString?: string | null) => {
+const toLocalISOString = (dateString?: string | null) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
   const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
 export default function LiveTrackingHub() {
@@ -102,8 +106,8 @@ export default function LiveTrackingHub() {
       fuelExpense: trip.fuelExpense,
       pendingAmount: trip.pendingAmount,
       customerId: trip.customer?.id || '',
-      startDate: toLocalDateString(trip.startDate),
-      endDate: toLocalDateString(trip.endDate),
+      startDate: toLocalISOString(trip.startDate),
+      endDate: toLocalISOString(trip.endDate),
     });
   };
 
@@ -118,8 +122,8 @@ export default function LiveTrackingHub() {
         customerId: editForm.customerId || null,
       };
 
-      if (editForm.startDate) payload.startDate = new Date(editForm.startDate + 'T00:00:00').toISOString();
-      if (editForm.endDate) payload.endDate = new Date(editForm.endDate + 'T00:00:00').toISOString();
+      if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
+      if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
 
       const res = await api.patch(`/trips/${tripId}`, payload);
       // Update the active trips in store
@@ -334,6 +338,30 @@ export default function LiveTrackingHub() {
                 </div>
               </div>
 
+              {/* Payment Summary */}
+              {(trip.advancePaid > 0 || trip.fuelExpense > 0 || trip.pendingAmount > 0) && (
+                <div className="mt-3 pt-3 border-t border-slate-800/40">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <Wallet size={11} className="text-slate-600" />
+                      Payment
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      Paid <span className="font-semibold text-emerald-400">₹{trip.advancePaid.toLocaleString()}</span>
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      Fuel <span className="font-semibold text-amber-400">₹{trip.fuelExpense.toLocaleString()}</span>
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      Pending{' '}
+                      <span className={`font-semibold ${trip.pendingAmount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        ₹{trip.pendingAmount.toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Edit Section */}
               {editingId === trip.id && (
                 <div className="mt-4 pt-4 border-t border-slate-800/60 animate-fade-in">
@@ -384,24 +412,16 @@ export default function LiveTrackingHub() {
 
                     {/* Schedule */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-slate-500 uppercase block mb-1">Start Date</label>
-                        <Input
-                          type="date"
-                          className="py-1.5 text-sm"
-                          value={editForm.startDate}
-                          onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-slate-500 uppercase block mb-1">End Date</label>
-                        <Input
-                          type="date"
-                          className="py-1.5 text-sm"
-                          value={editForm.endDate}
-                          onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
-                        />
-                      </div>
+                      <DateTimeInput
+                        label="Start Date & Time"
+                        value={editForm.startDate}
+                        onChange={(e) => setEditForm({ ...editForm, startDate: e })}
+                      />
+                      <DateTimeInput
+                        label="End Date & Time"
+                        value={editForm.endDate}
+                        onChange={(e) => setEditForm({ ...editForm, endDate: e })}
+                      />
                     </div>
 
                     {/* Financials */}
