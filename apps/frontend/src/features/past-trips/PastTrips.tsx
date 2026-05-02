@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   Trash2,
-  X as XIcon,
 } from 'lucide-react';
 
 export default function PastTrips() {
@@ -25,12 +24,12 @@ export default function PastTrips() {
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  
+
   const [filterType, setFilterType] = useState<'all' | 'date' | 'month' | 'year'>('all');
   const [filterDate, setFilterDate] = useState('');
   const [filterMonthStr, setFilterMonthStr] = useState<string>('');
   const [filterYearStr, setFilterYearStr] = useState<string>('');
-  
+
   const [activeFilterType, setActiveFilterType] = useState<'all' | 'date' | 'month' | 'year'>('all');
   const [activeFilterDate, setActiveFilterDate] = useState('');
   const [activeFilterMonthStr, setActiveFilterMonthStr] = useState<string>('');
@@ -109,7 +108,7 @@ export default function PastTrips() {
   const filteredTrips = trips.filter(trip => {
     if (!trip.startDate) return true;
     const start = new Date(trip.startDate);
-    
+
     if (activeFilterType === 'date' && activeFilterDate) {
       const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
       return startStr === activeFilterDate;
@@ -135,7 +134,7 @@ export default function PastTrips() {
     setFilterDate('');
     setFilterMonthStr('');
     setFilterYearStr('');
-    
+
     setActiveFilterType('all');
     setActiveFilterDate('');
     setActiveFilterMonthStr('');
@@ -154,7 +153,7 @@ export default function PastTrips() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
           <div className="relative flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 sm:py-1.5 hover:border-slate-700 hover:bg-slate-800/80 transition-all w-full sm:w-auto">
             <Calendar size={14} className="text-slate-500 pointer-events-none shrink-0" />
-            <select 
+            <select
               value={filterType}
               onChange={(e) => {
                 setFilterType(e.target.value as any);
@@ -174,8 +173,8 @@ export default function PastTrips() {
 
           {filterType === 'date' && (
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 sm:py-1.5 hover:border-slate-700 hover:bg-slate-800/80 transition-all animate-fade-in w-full sm:w-auto">
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
                 className="bg-transparent border-none outline-none text-xs font-medium text-slate-300 w-full sm:w-28"
@@ -185,7 +184,7 @@ export default function PastTrips() {
 
           {filterType === 'month' && (
             <div className="relative flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 sm:py-1.5 hover:border-slate-700 hover:bg-slate-800/80 transition-all animate-fade-in w-full sm:w-auto">
-              <select 
+              <select
                 value={filterMonthStr}
                 onChange={(e) => setFilterMonthStr(e.target.value)}
                 className="bg-transparent border-none outline-none text-xs font-medium text-slate-300 w-full sm:w-28 cursor-pointer appearance-none pr-6 relative z-10"
@@ -201,7 +200,7 @@ export default function PastTrips() {
 
           {filterType === 'year' && (
             <div className="relative flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 sm:py-1.5 hover:border-slate-700 hover:bg-slate-800/80 transition-all animate-fade-in w-full sm:w-auto">
-              <select 
+              <select
                 value={filterYearStr}
                 onChange={(e) => setFilterYearStr(e.target.value)}
                 className="bg-transparent border-none outline-none text-xs font-medium text-slate-300 w-full sm:w-24 cursor-pointer appearance-none pr-6 relative z-10"
@@ -271,8 +270,8 @@ export default function PastTrips() {
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-slate-100 text-sm">{trip.driver.name}</p>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${trip.status === 'Ended'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
                         }`}>
                         {trip.status}
                       </span>
@@ -298,7 +297,7 @@ export default function PastTrips() {
                       </div>
                     )}
                   </div>
-                  <button 
+                  <button
                     onClick={(e) => handleDelete(trip.id, e)}
                     disabled={deletingId === trip.id}
                     className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
