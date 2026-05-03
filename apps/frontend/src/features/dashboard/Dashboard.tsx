@@ -9,6 +9,7 @@ import {
   Wrench,
   CheckCircle2,
   RefreshCw,
+  CalendarClock,
 } from 'lucide-react';
 
 function StatCard({
@@ -79,7 +80,7 @@ export default function Dashboard() {
       {/* Stats grid */}
       {stats ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <StatCard
               icon={Car}
               label="Total Vehicles"
@@ -107,6 +108,13 @@ export default function Dashboard() {
               value={stats.trips.active}
               sub="Currently in progress"
               accent="bg-amber-500/15 text-amber-400"
+            />
+            <StatCard
+              icon={CalendarClock}
+              label="Scheduled Trips"
+              value={stats.trips.scheduled}
+              sub="Upcoming future trips"
+              accent="bg-fleet-500/15 text-fleet-400"
             />
           </div>
 
@@ -152,7 +160,7 @@ export default function Dashboard() {
         </>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="stat-card animate-pulse">
               <div className="h-4 bg-slate-800 rounded w-24" />
               <div className="h-8 bg-slate-800 rounded w-16 mt-2" />

@@ -395,7 +395,7 @@ function TripForm() {
   const set = (k: string) => (e: React.ChangeEvent<any>) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setCust = (k: string) => (e: React.ChangeEvent<any>) => setCustomerForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const freeDrivers = drivers.filter((d) => d.status === 'Free');
+  const availableDrivers = drivers.filter((d) => d.status !== 'Offline');
   const activeCars = cars.filter((c) => c.status === 'Active');
 
   const updateStop = (index: number, value: string) => {
@@ -439,6 +439,10 @@ function TripForm() {
       setStatus({ type: 'error', message: 'Driver, vehicle, platform, and at least 2 stops are required.' });
       return;
     }
+    if (!form.endDate) {
+      setStatus({ type: 'error', message: 'End date is required for scheduling.' });
+      return;
+    }
     setLoading(true);
     setStatus(null);
     try {
@@ -463,7 +467,7 @@ function TripForm() {
         driverId: '', carId: '', agentId: '', customerId: '',
         startDate: '', endDate: '', advancePaid: '', fuelExpense: '', pendingAmount: '',
       });
-      setStatus({ type: 'success', message: 'Trip initiated! Driver status updated to Busy.' });
+      setStatus({ type: 'success', message: 'Trip created successfully!' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -477,15 +481,15 @@ function TripForm() {
         label="Driver *"
         value={form.driverId}
         onChange={set('driverId')}
-        placeholder="Select a free driver..."
-        options={freeDrivers.map((d) => ({
+        placeholder="Select a driver..."
+        options={availableDrivers.map((d) => ({
           value: d.id,
           label: d.name,
         }))}
       />
-      {freeDrivers.length === 0 && (
+      {availableDrivers.length === 0 && (
         <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
-          No free drivers available. All drivers are currently busy or offline.
+          No available drivers. All drivers are currently offline.
         </p>
       )}
       <FormSelect
@@ -590,7 +594,7 @@ function TripForm() {
           onChange={(val) => setForm({ ...form, startDate: val })}
         />
         <DateTimeInput
-          label="End Date & Time"
+          label="End Date & Time *"
           value={form.endDate}
           onChange={(val) => setForm({ ...form, endDate: val })}
         />
@@ -607,9 +611,9 @@ function TripForm() {
       </div>
 
       {status && <Alert type={status.type} message={status.message} />}
-      <button onClick={submit} disabled={loading || freeDrivers.length === 0 || activeCars.length === 0} className="btn-primary w-full flex items-center justify-center gap-2" type="button">
+      <button onClick={submit} disabled={loading || availableDrivers.length === 0 || activeCars.length === 0} className="btn-primary w-full flex items-center justify-center gap-2" type="button">
         <Navigation size={15} />
-        {loading ? 'Initiating Trip...' : 'Initiate Trip'}
+        {loading ? 'Creating Trip...' : 'Create Trip'}
       </button>
     </div>
   );

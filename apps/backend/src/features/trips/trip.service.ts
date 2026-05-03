@@ -10,6 +10,41 @@ let _io: any = null;
 export const setIo = (io: any) => { _io = io; };
 
 export class TripService {
+
+  /**
+   * Check if a driver has any existing trips that overlap with the given date range.
+   * Overlap condition: existingStart < newEnd AND existingEnd > newStart
+   */
+  async checkScheduleConflict(
+    driverId: string,
+    startDate: Date,
+    endDate: Date,
+    excludeTripId?: string
+  ): Promise<{ hasConflict: boolean; conflictingTrip?: any }> {
+    const whereClause: any = {
+      driverId,
+      status: { notIn: ['Ended', 'Cancelled'] },
+      // Overlap: existing trip starts before new trip ends AND existing trip ends after new trip starts
+      startDate: { lt: endDate },
+      endDate: { gt: startDate },
+    };
+
+    if (excludeTripId) {
+      whereClause.id = { not: excludeTripId };
+    }
+
+    const conflictingTrip = await prisma.trip.findFirst({
+      where: whereClause,
+      include: { driver: { select: { name: true } } },
+      orderBy: { startDate: 'asc' },
+    });
+
+    return {
+      hasConflict: !!conflictingTrip,
+      conflictingTrip,
+    };
+  }
+
   async initiateTrip(data: {
     driverId: string;
     carId: string;
@@ -25,10 +60,9 @@ export class TripService {
   }): Promise<Trip> {
     const trip = await prisma.$transaction(async (tx) => {
       const driver = await tx.driver.findUnique({ where: { id: data.driverId } });
-
       if (!driver) throw new AppError('Driver not found', 404);
-      if (driver.status !== 'Free') {
-        throw new AppError(`Driver cannot accept a trip. Current status: ${driver.status}`, 400);
+      if (driver.status === 'Offline') {
+        throw new AppError('Driver is offline and cannot accept trips.', 400);
       }
 
       // Verify the agent exists
@@ -46,12 +80,47 @@ export class TripService {
         if (!customerExists) throw new AppError('Customer not found', 404);
       }
 
+      const now = new Date();
+      const startDate = data.startDate ? new Date(data.startDate) : new Date();
+
       const estimatedCompletion = data.estimatedDurationMinutes 
-        ? new Date(Date.now() + data.estimatedDurationMinutes * 60000) 
+        ? new Date(startDate.getTime() + data.estimatedDurationMinutes * 60000) 
         : null;
 
-      const startDate = data.startDate ? new Date(data.startDate) : new Date();
-      const endDate = data.endDate ? new Date(data.endDate) : estimatedCompletion;
+      // endDate is required for conflict checking. Default to startDate + 1 day if not provided.
+      let endDate: Date;
+      if (data.endDate) {
+        endDate = new Date(data.endDate);
+      } else if (estimatedCompletion) {
+        endDate = estimatedCompletion;
+      } else {
+        endDate = new Date(startDate.getTime() + 24 * 60 * 60000); // default: +1 day
+      }
+
+      if (endDate <= startDate) {
+        throw new AppError('End date must be after start date.', 400);
+      }
+
+      // Check for schedule conflicts with this driver
+      const { hasConflict, conflictingTrip } = await this.checkScheduleConflict(
+        data.driverId, startDate, endDate
+      );
+
+      if (hasConflict) {
+        const cStart = new Date(conflictingTrip.startDate).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        const cEnd = new Date(conflictingTrip.endDate).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        throw new AppError(
+          `Schedule conflict: Driver "${driver.name}" already has a trip from ${cStart} to ${cEnd} that overlaps with this time slot.`,
+          409
+        );
+      }
+
+      // Determine trip status based on dates
+      const tripStatus = startDate > now ? 'Scheduled' : 'Active';
 
       const shareToken = crypto.randomUUID();
 
@@ -69,15 +138,9 @@ export class TripService {
           fuelExpense: data.fuelExpense ?? 0,
           pendingAmount: data.pendingAmount ?? 0,
           shareToken,
-          status: 'Active',
+          status: tripStatus,
         },
         include: { driver: true, car: true, agent: true, customer: true },
-      });
-
-      // Atomically mark driver as Busy
-      await tx.driver.update({
-        where: { id: data.driverId },
-        data: { status: 'Busy' },
       });
 
       return newTrip;
@@ -94,6 +157,14 @@ export class TripService {
       where: { status: 'Active' },
       include: { driver: true, car: true, agent: true, customer: true },
       orderBy: { startTime: 'desc' },
+    });
+  }
+
+  async getScheduledTrips(): Promise<Trip[]> {
+    return await prisma.trip.findMany({
+      where: { status: 'Scheduled' },
+      include: { driver: true, car: true, agent: true, customer: true },
+      orderBy: { startDate: 'asc' },
     });
   }
 
@@ -143,6 +214,44 @@ export class TripService {
       updateData.customerId = data.customerId || null;
     }
 
+    // If dates are being changed, validate for schedule conflicts
+    const newStartDate = updateData.startDate || trip.startDate;
+    const newEndDate = updateData.endDate || trip.endDate;
+
+    if ((data.startDate || data.endDate) && newEndDate) {
+      if (newEndDate <= newStartDate) {
+        throw new AppError('End date must be after start date.', 400);
+      }
+
+      const { hasConflict, conflictingTrip } = await this.checkScheduleConflict(
+        trip.driverId, newStartDate, newEndDate, tripId
+      );
+
+      if (hasConflict) {
+        const cStart = new Date(conflictingTrip.startDate).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        const cEnd = new Date(conflictingTrip.endDate).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        const driverInfo = await prisma.driver.findUnique({ where: { id: trip.driverId } });
+        throw new AppError(
+          `Schedule conflict: Driver "${driverInfo?.name}" already has a trip from ${cStart} to ${cEnd} that overlaps with the new time slot.`,
+          409
+        );
+      }
+
+      // Auto-update status based on new dates (only if not manually ended/cancelled)
+      if (trip.status !== 'Ended' && trip.status !== 'Cancelled') {
+        const now = new Date();
+        if (newStartDate > now) {
+          updateData.status = 'Scheduled';
+        } else if (!newEndDate || newEndDate > now) {
+          updateData.status = 'Active';
+        }
+      }
+    }
+
     const updatedTrip = await prisma.trip.update({
       where: { id: tripId },
       data: updateData,
@@ -159,16 +268,10 @@ export class TripService {
     });
     if (!trip) throw new AppError('Trip not found', 404);
 
-    // Mark trip as Ended and free up the driver
-    await prisma.$transaction(async (tx) => {
-      await tx.trip.update({
-        where: { id: tripId },
-        data: { status: 'Ended' },
-      });
-      await tx.driver.update({
-        where: { id: trip.driverId },
-        data: { status: 'Free' },
-      });
+    // Mark trip as Ended (no longer changing driver status)
+    await prisma.trip.update({
+      where: { id: tripId },
+      data: { status: 'Ended' },
     });
 
     const updatedTrip = await prisma.trip.findUnique({
@@ -199,14 +302,6 @@ export class TripService {
   async deleteTrip(tripId: string): Promise<void> {
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) throw new AppError('Trip not found', 404);
-    
-    if (trip.status === 'Active') {
-      await prisma.$transaction(async (tx) => {
-        await tx.trip.delete({ where: { id: tripId } });
-        await tx.driver.update({ where: { id: trip.driverId }, data: { status: 'Free' } });
-      });
-    } else {
-      await prisma.trip.delete({ where: { id: tripId } });
-    }
+    await prisma.trip.delete({ where: { id: tripId } });
   }
 }

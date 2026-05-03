@@ -14,11 +14,13 @@ import {
   Mail,
   Menu,
   X,
+  CalendarClock,
 } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/live-tracking', icon: Radio, label: 'Live Tracking' },
+  { path: '/upcoming-trips', icon: CalendarClock, label: 'Upcoming Trips' },
   { path: '/data-entry', icon: ClipboardList, label: 'Data Entry' },
   { path: '/past-trips', icon: History, label: 'Past Trips' },
   { path: '/customers', icon: Users2, label: 'Customers' },
@@ -117,6 +119,11 @@ export default function Sidebar() {
                 {path === '/live-tracking' && stats && stats.trips.active > 0 && (
                   <span className="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                     {stats.trips.active}
+                  </span>
+                )}
+                {path === '/upcoming-trips' && stats && stats.trips.scheduled > 0 && (
+                  <span className="ml-auto bg-fleet-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {stats.trips.scheduled}
                   </span>
                 )}
               </NavLink>

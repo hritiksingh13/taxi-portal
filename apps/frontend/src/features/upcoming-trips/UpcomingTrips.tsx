@@ -1,56 +1,46 @@
 import React, { useState } from 'react';
 import { useDashboardStore, Trip } from '../../core/store/useDashboardStore';
-
 import { api } from '../../core/api.client';
 import {
+  CalendarClock,
   MapPin,
   ArrowRight,
   Building2,
   Car,
-  CheckCircle,
-  Navigation,
-  Radio,
-  Copy,
-  Check,
+  Clock,
   Edit2,
   X,
   Plus,
-  Clock,
-  Wallet
+  Trash2,
+  Play,
+  Copy,
+  Check,
+  AlertTriangle,
+  Wallet,
 } from 'lucide-react';
 import { Input, Select } from '../../shared/components/ui/Form';
 import { DateTimeInput } from '../../shared/components/ui/DateTimeInput';
 
-const formatEstimatedEnd = (dateString?: string | null) => {
-  if (!dateString) return 'No estimate';
+const formatScheduledDate = (dateString?: string | null) => {
+  if (!dateString) return 'Not set';
   const date = new Date(dateString);
-  const today = new Date();
+  const now = new Date();
 
-  const isToday = date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
-
-  const tomorrow = new Date(today);
+  const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const isTomorrow = date.getDate() === tomorrow.getDate() &&
-    date.getMonth() === tomorrow.getMonth() &&
-    date.getFullYear() === tomorrow.getFullYear();
+  const isToday = date.toDateString() === now.toDateString();
+  const isTomorrow = date.toDateString() === tomorrow.toDateString();
 
   const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  if (isToday) {
-    return `Today, ${time}`;
-  }
-  if (isTomorrow) {
-    return `Tomorrow, ${time}`;
-  }
+  if (isToday) return `Today, ${time}`;
+  if (isTomorrow) return `Tomorrow, ${time}`;
 
   const day = date.getDate();
-  const suffix = ["th", "st", "nd", "rd"][(day % 10 > 3 || Math.floor(day % 100 / 10) === 1) ? 0 : day % 10];
+  const suffix = [11, 12, 13].includes(day) ? 'th' : ['st', 'nd', 'rd'][(day % 10) - 1] || 'th';
   const month = date.toLocaleString('default', { month: 'short' });
   const weekday = date.toLocaleString('default', { weekday: 'short' });
-
-  return `${day}${suffix} ${month}, ${weekday}`;
+  return `${day}${suffix} ${month}, ${weekday} ${time}`;
 };
 
 const toLocalISOString = (dateString?: string | null) => {
@@ -61,44 +51,35 @@ const toLocalISOString = (dateString?: string | null) => {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
-export default function LiveTrackingHub() {
-  const { activeTrips, removeTrip, setActiveTrips, customers, cars, stats } = useDashboardStore();
+const getTimeUntil = (dateString: string) => {
+  const now = new Date();
+  const target = new Date(dateString);
+  const diff = target.getTime() - now.getTime();
+  if (diff <= 0) return 'Starting now';
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (days > 0) return `in ${days}d ${hours}h`;
+  if (hours > 0) return `in ${hours}h ${minutes}m`;
+  return `in ${minutes}m`;
+};
+
+export default function UpcomingTrips() {
+  const { scheduledTrips, setScheduledTrips, removeScheduledTrip, addTrip, customers, cars, stats } = useDashboardStore();
   const activeCars = cars.filter((c) => c.status === 'Active');
-  const [completing, setCompleting] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [editError, setEditError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleComplete = async (trip: Trip, markPaid: boolean) => {
-    setCompleting(trip.id);
-    try {
-      if (markPaid && trip.pendingAmount > 0) {
-        const newAdvance = (trip.advancePaid || 0) + trip.pendingAmount;
-        await api.patch(`/trips/${trip.id}`, {
-          pendingAmount: 0,
-          advancePaid: newAdvance
-        });
-      }
-      await api.patch(`/trips/${trip.id}/complete`);
-      removeTrip(trip.id);
-      setConfirmCompleteId(null);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setCompleting(null);
-    }
-  };
-
-  const copyShareLink = (shareToken: string, tripId: string) => {
-    const link = `${window.location.origin}/portal/${shareToken}`;
-    navigator.clipboard.writeText(link);
-    setCopied(tripId);
-    setTimeout(() => setCopied(null), 2000);
-  };
+  // Confirmation modal state for moving trip to active
+  const [moveConfirm, setMoveConfirm] = useState<{ tripId: string; payload: any } | null>(null);
+  const [moveLoading, setMoveLoading] = useState(false);
 
   const startEdit = (trip: Trip) => {
     setEditingId(trip.id);
@@ -115,42 +96,107 @@ export default function LiveTrackingHub() {
     });
   };
 
+  const buildPayload = () => {
+    const payload: any = {
+      stops: editForm.stops.filter((s: string) => s.trim().length >= 2),
+      advancePaid: Number(editForm.advancePaid),
+      fuelExpense: Number(editForm.fuelExpense),
+      pendingAmount: Number(editForm.pendingAmount),
+      customerId: editForm.customerId || null,
+    };
+    if (editForm.carId) payload.carId = editForm.carId;
+    if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
+    if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
+    return payload;
+  };
+
   const saveEdit = async (tripId: string) => {
     setSaving(true);
     setEditError(null);
-    try {
-      const payload: any = {
-        stops: editForm.stops.filter((s: string) => s.trim().length >= 2),
-        advancePaid: Number(editForm.advancePaid),
-        fuelExpense: Number(editForm.fuelExpense),
-        pendingAmount: Number(editForm.pendingAmount),
-        customerId: editForm.customerId || null,
-      };
 
-      if (editForm.carId) payload.carId = editForm.carId;
+    const payload = buildPayload();
 
-      if (editForm.startDate) payload.startDate = new Date(editForm.startDate).toISOString();
-      if (editForm.endDate) payload.endDate = new Date(editForm.endDate).toISOString();
-
-      const res = await api.patch(`/trips/${tripId}`, payload);
-
-      // If status changed to Scheduled (user moved start date to future), remove from active
-      const updatedTrip = res.data.data.trip;
-      if (updatedTrip.status === 'Scheduled') {
-        removeTrip(tripId);
-      } else {
-        setActiveTrips(
-          useDashboardStore.getState().activeTrips.map((t) =>
-            t.id === tripId ? { ...t, ...updatedTrip } : t
-          )
-        );
+    // Check if start date is being changed to current or past
+    if (editForm.startDate) {
+      const newStart = new Date(editForm.startDate);
+      const now = new Date();
+      if (newStart <= now) {
+        // Show confirmation modal
+        setMoveConfirm({ tripId, payload });
+        setSaving(false);
+        return;
       }
+    }
+
+    try {
+      const res = await api.patch(`/trips/${tripId}`, payload);
+      const updatedTrip = res.data.data.trip;
+      setScheduledTrips(
+        useDashboardStore.getState().scheduledTrips.map((t) =>
+          t.id === tripId ? { ...t, ...updatedTrip } : t
+        )
+      );
       setEditingId(null);
     } catch (err: any) {
       setEditError(err.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const confirmMoveToActive = async () => {
+    if (!moveConfirm) return;
+    setMoveLoading(true);
+    try {
+      const res = await api.patch(`/trips/${moveConfirm.tripId}`, moveConfirm.payload);
+      const updatedTrip = res.data.data.trip;
+
+      // Remove from scheduled, add to active
+      removeScheduledTrip(moveConfirm.tripId);
+      addTrip({ ...updatedTrip, status: 'Active' });
+
+      setEditingId(null);
+      setMoveConfirm(null);
+    } catch (err: any) {
+      setEditError(err.message);
+      setMoveConfirm(null);
+    } finally {
+      setMoveLoading(false);
+    }
+  };
+
+  const handleDelete = async (tripId: string) => {
+    if (!confirm('Are you sure you want to delete this scheduled trip?')) return;
+    setDeletingId(tripId);
+    try {
+      await api.delete(`/trips/${tripId}`);
+      removeScheduledTrip(tripId);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleActivateNow = async (trip: Trip) => {
+    if (!confirm(`Activate trip for ${trip.driver.name} now? This will move it to Live Tracking.`)) return;
+    try {
+      const res = await api.patch(`/trips/${trip.id}`, {
+        startDate: new Date().toISOString(),
+        status: 'Active',
+      });
+      removeScheduledTrip(trip.id);
+      addTrip(res.data.data.trip);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const copyShareLink = (shareToken: string, tripId: string) => {
+    const link = `${window.location.origin}/portal/${shareToken}`;
+    navigator.clipboard.writeText(link);
+    setCopied(tripId);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const updateStop = (index: number, value: string) => {
@@ -175,25 +221,69 @@ export default function LiveTrackingHub() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
+      {/* Move to Active Confirmation Modal */}
+      {moveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-slide-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} className="text-amber-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-100 text-sm">Move to Live Tracking?</p>
+                <p className="text-xs text-slate-500 mt-0.5">Start date is in the past or current time</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 mb-6">
+              The start date you selected is in the past or is the current time. 
+              This will move the trip from <span className="text-fleet-400 font-medium">Upcoming Trips</span> to <span className="text-emerald-400 font-medium">Live Tracking Hub</span> and 
+              mark it as an active trip. Are you sure?
+            </p>
+            {editError && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-medium mb-4 animate-fade-in">
+                <span>⚠️</span>
+                {editError}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={confirmMoveToActive}
+                disabled={moveLoading}
+                className="btn-primary flex-1 text-sm py-2"
+              >
+                {moveLoading ? 'Moving...' : 'Yes, Activate Now'}
+              </button>
+              <button
+                onClick={() => setMoveConfirm(null)}
+                disabled={moveLoading}
+                className="btn-secondary flex-1 text-sm py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="font-display text-2xl font-bold text-slate-100">Live Operations Hub</h1>
-            {activeTrips.length > 0 && (
-              <span className="flex items-center gap-1.5 bg-amber-500/15 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-500/20">
-                <span className="dot-busy" style={{ width: 6, height: 6 }} />
-                {activeTrips.length} Active
+            <h1 className="font-display text-2xl font-bold text-slate-100">Upcoming Trips</h1>
+            {scheduledTrips.length > 0 && (
+              <span className="flex items-center gap-1.5 bg-fleet-500/15 text-fleet-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-fleet-500/20">
+                <CalendarClock size={11} />
+                {scheduledTrips.length} Scheduled
               </span>
             )}
           </div>
           <p className="text-slate-500 text-sm">
-            Real-time view of all drivers currently on active trips
+            Future trips scheduled for your fleet drivers
           </p>
         </div>
         <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5">
-          <Radio size={14} className="text-emerald-400 animate-pulse" />
-          <span className="text-xs font-medium text-slate-400">Live Telemetry</span>
+          <CalendarClock size={14} className="text-fleet-400" />
+          <span className="text-xs font-medium text-slate-400">Schedule Manager</span>
         </div>
       </div>
 
@@ -202,25 +292,25 @@ export default function LiveTrackingHub() {
           <div className="relative w-20 h-20 mb-6">
             <div className="absolute inset-0 bg-fleet-500/20 rounded-full animate-ping" />
             <div className="relative flex items-center justify-center w-full h-full bg-slate-800 rounded-full border border-slate-700">
-              <Radio className="w-8 h-8 text-fleet-400 animate-pulse" />
+              <CalendarClock className="w-8 h-8 text-fleet-400 animate-pulse" />
             </div>
           </div>
-          <h3 className="text-xl font-display font-bold text-slate-100 mb-2">Connecting to Live Feed</h3>
-          <p className="text-slate-500 text-sm">Syncing active fleet locations...</p>
+          <h3 className="text-xl font-display font-bold text-slate-100 mb-2">Loading Scheduled Trips</h3>
+          <p className="text-slate-500 text-sm">Fetching upcoming trip data...</p>
         </div>
-      ) : activeTrips.length === 0 ? (
+      ) : scheduledTrips.length === 0 ? (
         <div className="card flex flex-col items-center justify-center py-24 text-center">
           <div className="w-16 h-16 rounded-2xl bg-slate-800/60 flex items-center justify-center mb-4">
-            <Navigation size={28} className="text-slate-600" />
+            <CalendarClock size={28} className="text-slate-600" />
           </div>
-          <p className="text-lg font-semibold text-slate-400">No Active Trips</p>
+          <p className="text-lg font-semibold text-slate-400">No Upcoming Trips</p>
           <p className="text-sm text-slate-600 mt-1 max-w-xs">
-            All drivers are currently free or offline. Start a trip from the Data Entry portal.
+            Schedule a future trip from the Data Entry portal to see it here.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {activeTrips.map((trip, idx) => (
+          {scheduledTrips.map((trip, idx) => (
             <div
               key={trip.id}
               className="card p-5 hover:border-slate-700/80 transition-all duration-200 animate-slide-in"
@@ -272,25 +362,18 @@ export default function LiveTrackingHub() {
                       {trip.agent.name}
                     </span>
                     <span className="text-slate-700">·</span>
-                    <span className="text-xs text-slate-500">
-                      Started {(() => {
-                        const d = new Date(trip.startTime);
-                        const day = d.getDate();
-                        const suffix = [11,12,13].includes(day) ? 'th' : ['st','nd','rd'][(day % 10) - 1] || 'th';
-                        const month = d.toLocaleString('en-IN', { month: 'short' });
-                        const weekday = d.toLocaleString('en-IN', { weekday: 'short' });
-                        const time = d.toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-                        return `${day}${suffix} ${month}, ${weekday} ${time}`;
-                      })()}
+                    <span className="flex items-center gap-1 text-xs text-fleet-400 font-medium">
+                      <Clock size={10} />
+                      Starts {formatScheduledDate(trip.startDate)}
                     </span>
                   </div>
                 </div>
 
-                {/* Right: Timer, share link, complete button */}
+                {/* Right: Countdown, actions */}
                 <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 font-mono text-sm font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-                    <Clock size={13} />
-                    {formatEstimatedEnd(trip.estimatedCompletion || trip.endDate)}
+                  <div className="flex items-center gap-1.5 font-mono text-sm font-semibold text-fleet-400 bg-fleet-500/10 px-2.5 py-1 rounded-md border border-fleet-500/20">
+                    <CalendarClock size={13} />
+                    {getTimeUntil(trip.startDate)}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -310,51 +393,23 @@ export default function LiveTrackingHub() {
                         {copied === trip.id ? 'Copied' : 'Share'}
                       </button>
                     )}
-                    {confirmCompleteId === trip.id ? (
-                      <div className="flex items-center gap-1.5 animate-fade-in">
-                        {trip.pendingAmount > 0 && (
-                          <button
-                            onClick={() => handleComplete(trip, true)}
-                            disabled={completing === trip.id}
-                            className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors whitespace-nowrap"
-                          >
-                            <CheckCircle size={11} />
-                            Complete & Clear Pending (₹{trip.pendingAmount})
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleComplete(trip, false)}
-                          disabled={completing === trip.id}
-                          className="flex items-center gap-1.5 text-[11px] font-medium text-slate-300 bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition-colors whitespace-nowrap"
-                        >
-                          {completing === trip.id && trip.pendingAmount <= 0 ? 'Completing...' : 'Just Complete'}
-                        </button>
-                        <button
-                          onClick={() => setConfirmCompleteId(null)}
-                          disabled={completing === trip.id}
-                          className="text-slate-500 hover:text-slate-300 p-1"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (trip.pendingAmount > 0) {
-                            setConfirmCompleteId(trip.id);
-                          } else {
-                            handleComplete(trip, false);
-                          }
-                        }}
-                        disabled={completing === trip.id}
-                        className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 
-                                   bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 
-                                   px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-50"
-                      >
-                        <CheckCircle size={12} />
-                        {completing === trip.id ? 'Completing...' : 'Mark Complete'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleActivateNow(trip)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300
+                                 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20
+                                 px-3 py-1.5 rounded-lg transition-all duration-150"
+                    >
+                      <Play size={12} />
+                      Start Now
+                    </button>
+                    <button
+                      onClick={() => handleDelete(trip.id)}
+                      disabled={deletingId === trip.id}
+                      className="flex items-center gap-1 text-xs text-slate-500 hover:text-rose-400 transition-colors"
+                      title="Delete Trip"
+                    >
+                      <Trash2 size={11} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -386,7 +441,7 @@ export default function LiveTrackingHub() {
               {/* Edit Section */}
               {editingId === trip.id && (
                 <div className="mt-4 pt-4 border-t border-slate-800/60 animate-fade-in">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Edit Trip Details</p>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Edit Scheduled Trip</p>
 
                   <div className="space-y-4">
                     {/* Vehicle */}
@@ -526,4 +581,3 @@ export default function LiveTrackingHub() {
     </div>
   );
 }
-

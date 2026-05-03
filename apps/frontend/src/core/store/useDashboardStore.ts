@@ -71,7 +71,7 @@ export interface DashboardStats {
   cars: { total: number; active: number; maintenance: number };
   drivers: { total: number; free: number; busy: number; offline: number };
   agents: { total: number };
-  trips: { active: number; total: number };
+  trips: { active: number; scheduled: number; total: number };
   customers: { total: number };
   financials: { totalRevenue: number; totalFuelExpense: number; totalPending: number };
 }
@@ -79,6 +79,7 @@ export interface DashboardStats {
 interface DashboardStore {
   stats: DashboardStats | null;
   activeTrips: Trip[];
+  scheduledTrips: Trip[];
   drivers: Driver[];
   cars: Car[];
   agents: Agent[];
@@ -88,8 +89,10 @@ interface DashboardStore {
 
   setStats: (stats: DashboardStats) => void;
   setActiveTrips: (trips: Trip[]) => void;
+  setScheduledTrips: (trips: Trip[]) => void;
   addTrip: (trip: Trip) => void;
   removeTrip: (tripId: string) => void;
+  removeScheduledTrip: (tripId: string) => void;
   setDrivers: (drivers: Driver[]) => void;
   updateDriver: (driver: Driver) => void;
   setCars: (cars: Car[]) => void;
@@ -102,6 +105,7 @@ interface DashboardStore {
 export const useDashboardStore = create<DashboardStore>((set) => ({
   stats: null,
   activeTrips: [],
+  scheduledTrips: [],
   drivers: [],
   cars: [],
   agents: [],
@@ -111,23 +115,29 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
 
   setStats: (stats) => set({ stats }),
   setActiveTrips: (trips) => set({ activeTrips: trips }),
+  setScheduledTrips: (trips) => set({ scheduledTrips: trips }),
 
   addTrip: (trip) =>
     set((state) => {
-      // Prevent adding duplicate trips if already added via API or Socket
-      if (state.activeTrips.some((t) => t.id === trip.id)) {
-        return state;
+      if (trip.status === 'Scheduled') {
+        if (state.scheduledTrips.some((t) => t.id === trip.id)) return state;
+        return {
+          scheduledTrips: [trip, ...state.scheduledTrips],
+          stats: state.stats
+            ? {
+                ...state.stats,
+                trips: { ...state.stats.trips, scheduled: state.stats.trips.scheduled + 1 },
+              }
+            : null,
+        };
       }
+      // Active trip
+      if (state.activeTrips.some((t) => t.id === trip.id)) return state;
       return {
         activeTrips: [trip, ...state.activeTrips],
         stats: state.stats
           ? {
               ...state.stats,
-              drivers: {
-                ...state.stats.drivers,
-                free: Math.max(0, state.stats.drivers.free - 1),
-                busy: state.stats.drivers.busy + 1,
-              },
               trips: { ...state.stats.trips, active: state.stats.trips.active + 1 },
             }
           : null,
@@ -140,12 +150,18 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       stats: state.stats
         ? {
             ...state.stats,
-            drivers: {
-              ...state.stats.drivers,
-              free: state.stats.drivers.free + 1,
-              busy: Math.max(0, state.stats.drivers.busy - 1),
-            },
             trips: { ...state.stats.trips, active: Math.max(0, state.stats.trips.active - 1) },
+          }
+        : null,
+    })),
+
+  removeScheduledTrip: (tripId) =>
+    set((state) => ({
+      scheduledTrips: state.scheduledTrips.filter((t) => t.id !== tripId),
+      stats: state.stats
+        ? {
+            ...state.stats,
+            trips: { ...state.stats.trips, scheduled: Math.max(0, state.stats.trips.scheduled - 1) },
           }
         : null,
     })),

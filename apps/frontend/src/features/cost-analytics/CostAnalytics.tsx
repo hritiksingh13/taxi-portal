@@ -8,6 +8,7 @@ import {
   Fuel,
   RefreshCw,
   CalendarRange,
+  CalendarClock,
 } from 'lucide-react';
 import {
   BarChart,
@@ -112,7 +113,7 @@ const MONTH_FILTERS: { value: MonthRange; label: string }[] = [
 ];
 
 export default function CostAnalytics() {
-  const { stats } = useDashboardStore();
+  const { stats, scheduledTrips } = useDashboardStore();
   const [allTrips, setAllTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthRange, setMonthRange] = useState<MonthRange>(6);
@@ -187,6 +188,47 @@ export default function CostAnalytics() {
     name: d.name,
     value: d.revenue,
   }));
+
+  // ── Projected analytics from scheduled trips ────────────────────
+  const projectedRevenue = scheduledTrips.reduce((sum, t) => sum + (t.advancePaid || 0), 0);
+  const projectedFuel = scheduledTrips.reduce((sum, t) => sum + (t.fuelExpense || 0), 0);
+  const projectedPending = scheduledTrips.reduce((sum, t) => sum + (t.pendingAmount || 0), 0);
+
+  const projMonthMap = new Map<string, { count: number; revenue: number; expense: number }>();
+  scheduledTrips.forEach((t) => {
+    const date = new Date(t.startDate);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!projMonthMap.has(key)) projMonthMap.set(key, { count: 0, revenue: 0, expense: 0 });
+    const m = projMonthMap.get(key)!;
+    m.count++;
+    m.revenue += t.advancePaid || 0;
+    m.expense += t.fuelExpense || 0;
+  });
+
+  const projectedMonthData = Array.from(projMonthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, val]) => {
+      const [y, m] = key.split('-');
+      const date = new Date(Number(y), Number(m) - 1);
+      return {
+        month: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        Revenue: val.revenue,
+        Expenses: val.expense,
+        trips: val.count,
+      };
+    });
+
+  // Driver workload from scheduled trips
+  const projDriverMap = new Map<string, { name: string; trips: number }>();
+  scheduledTrips.forEach((t) => {
+    const id = t.driver?.id || 'unknown';
+    const name = t.driver?.name || 'Unknown';
+    if (!projDriverMap.has(id)) projDriverMap.set(id, { name, trips: 0 });
+    projDriverMap.get(id)!.trips++;
+  });
+  const projDriverWorkload = Array.from(projDriverMap.values())
+    .sort((a, b) => b.trips - a.trips)
+    .slice(0, 8);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -392,6 +434,80 @@ export default function CostAnalytics() {
           </div>
         </div>
       </div>
+
+      {/* ─── Projected Analytics Section ─────────────────────────── */}
+      {scheduledTrips.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-5">
+            <CalendarClock size={18} className="text-fleet-400" />
+            <h2 className="font-display text-lg font-bold text-slate-100">Projected Analytics</h2>
+            <span className="text-xs font-medium text-fleet-400 bg-fleet-500/10 px-2 py-0.5 rounded-full border border-fleet-500/20">
+              {scheduledTrips.length} scheduled trips
+            </span>
+          </div>
+
+          {/* Projected Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <StatCard icon={TrendingUp} label="Projected Revenue" value={projectedRevenue} color="bg-fleet-500/15 text-fleet-400" prefix="₹" />
+            <StatCard icon={Fuel} label="Est. Fuel Expenses" value={projectedFuel} color="bg-amber-500/15 text-amber-400" prefix="₹" />
+            <StatCard icon={Wallet} label="Expected Pending" value={projectedPending} color="bg-rose-500/15 text-rose-400" prefix="₹" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Projected Revenue vs Expenses */}
+            <div className="card p-5">
+              <p className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-1.5">
+                <CalendarRange size={14} className="text-fleet-400" />
+                Projected Revenue vs Expenses
+              </p>
+              {projectedMonthData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={projectedMonthData} barGap={4} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={{ stroke: CHART_COLORS.grid }} tickLine={false} />
+                    <YAxis tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} width={48} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} formatter={(value) => <span className="text-slate-400 ml-1">{value}</span>} />
+                    <Bar dataKey="Revenue" fill="#34d399" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar dataKey="Expenses" fill={CHART_COLORS.expense} radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[260px] flex items-center justify-center text-slate-600 text-sm">No projected data</div>
+              )}
+            </div>
+
+            {/* Driver Workload Distribution */}
+            <div className="card p-5">
+              <p className="text-sm font-semibold text-slate-300 mb-4">Driver Workload (Upcoming)</p>
+              {projDriverWorkload.length > 0 ? (
+                <div className="space-y-3">
+                  {projDriverWorkload.map((d, i) => {
+                    const maxTrips = projDriverWorkload[0].trips;
+                    const pct = maxTrips > 0 ? (d.trips / maxTrips) * 100 : 0;
+                    return (
+                      <div key={i}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-slate-300 font-medium">{d.name}</span>
+                          <span className="text-xs font-semibold text-fleet-400">{d.trips} trips</span>
+                        </div>
+                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-fleet-500 to-fleet-400 rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-slate-600 text-sm">No scheduled trips</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

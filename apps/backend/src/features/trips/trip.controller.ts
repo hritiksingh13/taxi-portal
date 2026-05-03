@@ -15,6 +15,11 @@ export class TripController {
     res.status(200).json({ status: 'success', results: trips.length, data: { trips } });
   };
 
+  getScheduledTrips = async (req: Request, res: Response) => {
+    const trips = await tripService.getScheduledTrips();
+    res.status(200).json({ status: 'success', results: trips.length, data: { trips } });
+  };
+
   getAllTrips = async (req: Request, res: Response) => {
     const trips = await tripService.getAllTrips();
     res.status(200).json({ status: 'success', results: trips.length, data: { trips } });

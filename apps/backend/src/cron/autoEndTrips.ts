@@ -5,14 +5,36 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Auto-end cron job: runs every 5 minutes.
- * Finds trips with status=Active and endDate < now(), marks them as Ended, and frees the driver.
+ * Auto-manage trip lifecycle: runs every 5 minutes.
+ * 1. Finds Scheduled trips whose startDate <= now and activates them.
+ * 2. Finds Active trips with endDate < now and marks them as Ended.
  */
 export function startAutoEndCron() {
   cron.schedule('*/5 * * * *', async () => {
     try {
       const now = new Date();
 
+      // ── 1. Auto-activate scheduled trips whose start time has arrived ──
+      const tripsToActivate = await prisma.trip.findMany({
+        where: {
+          status: 'Scheduled',
+          startDate: { lte: now },
+        },
+        include: { driver: true },
+      });
+
+      if (tripsToActivate.length > 0) {
+        console.log(`🚀 Auto-activating ${tripsToActivate.length} scheduled trip(s)...`);
+        for (const trip of tripsToActivate) {
+          await prisma.trip.update({
+            where: { id: trip.id },
+            data: { status: 'Active' },
+          });
+          console.log(`  ✅ Trip ${trip.id} activated. Driver: ${trip.driver.name}`);
+        }
+      }
+
+      // ── 2. Auto-end active trips whose end date has passed ──
       const expiredTrips = await prisma.trip.findMany({
         where: {
           status: 'Active',
@@ -21,32 +43,20 @@ export function startAutoEndCron() {
         include: { driver: true },
       });
 
-      if (expiredTrips.length === 0) return;
-
-      console.log(`⏰ Auto-ending ${expiredTrips.length} expired trip(s)...`);
-
-      for (const trip of expiredTrips) {
-        await prisma.$transaction(async (tx) => {
-          await tx.trip.update({
+      if (expiredTrips.length > 0) {
+        console.log(`⏰ Auto-ending ${expiredTrips.length} expired trip(s)...`);
+        for (const trip of expiredTrips) {
+          await prisma.trip.update({
             where: { id: trip.id },
             data: { status: 'Ended' },
           });
-
-          // Only free the driver if they're still marked as Busy
-          if (trip.driver.status === 'Busy') {
-            await tx.driver.update({
-              where: { id: trip.driverId },
-              data: { status: 'Free' },
-            });
-          }
-        });
-
-        console.log(`  ✅ Trip ${trip.id} auto-ended. Driver ${trip.driver.name} freed.`);
+          console.log(`  ✅ Trip ${trip.id} auto-ended. Driver: ${trip.driver.name}`);
+        }
       }
     } catch (error) {
-      console.error('❌ Auto-end cron error:', error);
+      console.error('❌ Auto trip lifecycle cron error:', error);
     }
   });
 
-  console.log('⏰ Auto-end cron job scheduled (every 5 minutes)');
+  console.log('⏰ Trip lifecycle cron job scheduled (every 5 minutes)');
 }

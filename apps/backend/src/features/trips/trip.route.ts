@@ -9,6 +9,7 @@ const router = Router();
 const tripController = new TripController();
 
 router.get('/active', catchAsync(tripController.getActiveTrips));
+router.get('/scheduled', catchAsync(tripController.getScheduledTrips));
 router.get('/past', catchAsync(tripController.getPastTrips));
 
 router

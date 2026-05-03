@@ -5,6 +5,7 @@ import Dashboard from './features/dashboard/Dashboard';
 import LiveTrackingHub from './features/live-tracking/LiveTrackingHub';
 import DataEntryPortal from './features/data-entry/DataEntryPortal';
 import PastTrips from './features/past-trips/PastTrips';
+import UpcomingTrips from './features/upcoming-trips/UpcomingTrips';
 import CustomerManagement from './features/customer-management/CustomerManagement';
 import CostAnalytics from './features/cost-analytics/CostAnalytics';
 import EmailUpdates from './features/email-updates/EmailUpdates';
@@ -40,18 +41,20 @@ export default function App() {
     // Preload global data
     const loadInitialData = async () => {
       try {
-        const [statsRes, tripsRes, driversRes, carsRes, agentsRes, customersRes] = await Promise.all([
+        const [statsRes, tripsRes, scheduledRes, driversRes, carsRes, agentsRes, customersRes] = await Promise.all([
           api.get('/dashboard/stats'),
           api.get('/trips/active'),
+          api.get('/trips/scheduled'),
           api.get('/drivers'),
           api.get('/cars'),
           api.get('/agents'),
           api.get('/customers'),
         ]);
-        const { setStats, setActiveTrips, setDrivers, setCars, setAgents, setCustomers } =
+        const { setStats, setActiveTrips, setScheduledTrips, setDrivers, setCars, setAgents, setCustomers } =
           useDashboardStore.getState();
         setStats(statsRes.data.data);
         setActiveTrips(tripsRes.data.data.trips);
+        setScheduledTrips(scheduledRes.data.data.trips);
         setDrivers(driversRes.data.data.drivers);
         setCars(carsRes.data.data.cars);
         setAgents(agentsRes.data.data.agents);
@@ -107,6 +110,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/live-tracking" element={<LiveTrackingHub />} />
+        <Route path="/upcoming-trips" element={<UpcomingTrips />} />
         <Route path="/data-entry" element={<DataEntryPortal />} />
         <Route path="/past-trips" element={<PastTrips />} />
         <Route path="/customers" element={<CustomerManagement />} />
