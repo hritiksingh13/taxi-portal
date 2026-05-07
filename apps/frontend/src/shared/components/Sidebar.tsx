@@ -15,10 +15,12 @@ import {
   Menu,
   X,
   CalendarClock,
+  Wrench,
 } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/vehicles', icon: Wrench, label: 'Vehicles' },
   { path: '/live-tracking', icon: Radio, label: 'Live Tracking' },
   { path: '/upcoming-trips', icon: CalendarClock, label: 'Upcoming Trips' },
   { path: '/data-entry', icon: ClipboardList, label: 'Data Entry' },

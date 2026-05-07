@@ -10,6 +10,7 @@ import CustomerManagement from './features/customer-management/CustomerManagemen
 import CostAnalytics from './features/cost-analytics/CostAnalytics';
 import EmailUpdates from './features/email-updates/EmailUpdates';
 import CustomerPortal from './features/customer-portal/CustomerPortal';
+import VehicleManagement from './features/vehicles/VehicleManagement';
 import { socket } from './core/socket.client';
 import { useDashboardStore } from './core/store/useDashboardStore';
 import { api } from './core/api.client';
@@ -109,6 +110,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/vehicles" element={<VehicleManagement />} />
         <Route path="/live-tracking" element={<LiveTrackingHub />} />
         <Route path="/upcoming-trips" element={<UpcomingTrips />} />
         <Route path="/data-entry" element={<DataEntryPortal />} />

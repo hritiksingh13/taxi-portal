@@ -10,6 +10,16 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface MaintenanceRecord {
+  id: string;
+  carId: string;
+  cost: number;
+  details: string;
+  startDate: string;
+  endDate: string | null;
+  createdAt: string;
+}
+
 export interface Trip {
   id: string;
   stops: string[];
@@ -54,6 +64,10 @@ export interface Car {
   licensePlate: string;
   transmissionType: 'Automatic' | 'Manual';
   status: 'Active' | 'Maintenance';
+  lastMaintenanceDate: string | null;
+  nextMaintenanceDue: string | null;
+  activeMaintenanceRecord?: MaintenanceRecord | null;
+  isOnTrip?: boolean;
   drivers?: Partial<Driver>[];
   createdAt: string;
 }
@@ -74,6 +88,10 @@ export interface DashboardStats {
   trips: { active: number; scheduled: number; total: number };
   customers: { total: number };
   financials: { totalRevenue: number; totalFuelExpense: number; totalPending: number };
+  maintenance: {
+    upcoming: Car[];
+    overdue: Car[];
+  };
 }
 
 interface DashboardStore {

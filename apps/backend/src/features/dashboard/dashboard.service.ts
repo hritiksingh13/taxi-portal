@@ -5,6 +5,9 @@ const prisma = new PrismaClient();
 
 export class DashboardService {
   async getStats() {
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     const [
       totalCars,
       activeCars,
@@ -21,6 +24,8 @@ export class DashboardService {
       totalRevenue,
       totalFuelExpense,
       totalPending,
+      upcomingMaintenance,
+      overdueMaintenance,
     ] = await Promise.all([
       prisma.car.count(),
       prisma.car.count({ where: { status: 'Active' } }),
@@ -37,6 +42,22 @@ export class DashboardService {
       prisma.trip.aggregate({ _sum: { advancePaid: true } }),
       prisma.trip.aggregate({ _sum: { fuelExpense: true } }),
       prisma.trip.aggregate({ _sum: { pendingAmount: true } }),
+      // Cars with upcoming maintenance within next 7 days
+      prisma.car.findMany({
+        where: {
+          nextMaintenanceDue: { gte: now, lte: sevenDaysFromNow },
+          status: 'Active',
+        },
+        orderBy: { nextMaintenanceDue: 'asc' },
+      }),
+      // Cars with overdue maintenance (past due date but still active)
+      prisma.car.findMany({
+        where: {
+          nextMaintenanceDue: { lt: now },
+          status: 'Active',
+        },
+        orderBy: { nextMaintenanceDue: 'asc' },
+      }),
     ]);
 
     return {
@@ -49,6 +70,10 @@ export class DashboardService {
         totalRevenue: totalRevenue._sum.advancePaid ?? 0,
         totalFuelExpense: totalFuelExpense._sum.fuelExpense ?? 0,
         totalPending: totalPending._sum.pendingAmount ?? 0,
+      },
+      maintenance: {
+        upcoming: upcomingMaintenance,
+        overdue: overdueMaintenance,
       },
     };
   }

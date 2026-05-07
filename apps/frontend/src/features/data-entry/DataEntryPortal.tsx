@@ -38,7 +38,7 @@ function Alert({ type, message }: { type: 'success' | 'error'; message: string }
 function CarForm() {
   const { cars, setCars } = useDashboardStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
+  const [form, setForm] = useState({ brand: '', licensePlate: '', transmissionType: '' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,7 +46,7 @@ function CarForm() {
 
   const handleEdit = (car: any) => {
     setEditingId(car.id);
-    setForm({ brand: car.brand, licensePlate: car.licensePlate, transmissionType: car.transmissionType, status: car.status });
+    setForm({ brand: car.brand, licensePlate: car.licensePlate, transmissionType: car.transmissionType });
     setStatus(null);
   };
 
@@ -79,7 +79,7 @@ function CarForm() {
       const res = await api.get('/cars');
       setCars(res.data.data.cars);
       setEditingId(null);
-      setForm({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
+      setForm({ brand: '', licensePlate: '', transmissionType: '' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -89,7 +89,7 @@ function CarForm() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setForm({ brand: '', licensePlate: '', transmissionType: '', status: 'Active' });
+    setForm({ brand: '', licensePlate: '', transmissionType: '' });
     setStatus(null);
   };
 
@@ -108,15 +108,7 @@ function CarForm() {
             { value: 'Manual', label: 'Manual' },
           ]}
         />
-        <FormSelect
-          label="Status"
-          value={form.status}
-          onChange={set('status')}
-          options={[
-            { value: 'Active', label: 'Active' },
-            { value: 'Maintenance', label: 'Under Maintenance' },
-          ]}
-        />
+
         {status && <Alert type={status.type} message={status.message} />}
         <div className="flex gap-2">
           <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">

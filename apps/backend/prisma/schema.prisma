@@ -33,16 +33,19 @@ enum TripStatus {
 }
 
 model Car {
-  id               String           @id @default(uuid())
-  brand            String
-  licensePlate     String           @unique
-  transmissionType TransmissionType
-  status           CarStatus        @default(Active)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                   String              @id @default(uuid())
+  brand                String
+  licensePlate         String              @unique
+  transmissionType     TransmissionType
+  status               CarStatus           @default(Active)
+  lastMaintenanceDate  DateTime?
+  nextMaintenanceDue   DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
-  // A car can be used in multiple trips
-  trips            Trip[]
+  // Relationships
+  trips                Trip[]
+  maintenanceRecords   MaintenanceRecord[]
 }
 
 model Agent {
@@ -134,4 +137,18 @@ model Feedback {
   // Relationship
   tripId     String   @unique
   trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceRecord {
+  id        String   @id @default(uuid())
+  cost      Float    @default(0)
+  details   String
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationship
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
 }

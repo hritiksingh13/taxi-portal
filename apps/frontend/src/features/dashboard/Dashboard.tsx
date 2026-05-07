@@ -10,7 +10,19 @@ import {
   CheckCircle2,
   RefreshCw,
   CalendarClock,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
+
+function formatDate(d: string | null | undefined) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function daysFromNow(d: string) {
+  const diff = Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return diff;
+}
 
 function StatCard({
   icon: Icon,
@@ -157,6 +169,83 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
+
+          {/* Maintenance Alerts */}
+          {stats.maintenance && (stats.maintenance.overdue.length > 0 || stats.maintenance.upcoming.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {/* Overdue Maintenance */}
+              {stats.maintenance.overdue.length > 0 && (
+                <div className="card overflow-hidden border-l-2 border-l-rose-500/60">
+                  <div className="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={15} className="text-rose-400" />
+                      <p className="text-sm font-semibold text-rose-300">Overdue Maintenance</p>
+                    </div>
+                    <span className="bg-rose-500/15 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {stats.maintenance.overdue.length}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {stats.maintenance.overdue.map((car: any) => (
+                      <div key={car.id} className="flex items-center justify-between p-3 rounded-lg bg-rose-500/5 border border-rose-500/10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-rose-500/15 flex items-center justify-center">
+                            <Car size={14} className="text-rose-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-200">{car.brand}</p>
+                            <span className="font-mono text-[10px] text-slate-500">{car.licensePlate}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-semibold text-rose-400">
+                            {Math.abs(daysFromNow(car.nextMaintenanceDue))} days overdue
+                          </p>
+                          <p className="text-[10px] text-slate-500">Due {formatDate(car.nextMaintenanceDue)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Upcoming Maintenance */}
+              {stats.maintenance.upcoming.length > 0 && (
+                <div className="card overflow-hidden border-l-2 border-l-amber-500/60">
+                  <div className="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock size={15} className="text-amber-400" />
+                      <p className="text-sm font-semibold text-amber-300">Upcoming Maintenance</p>
+                    </div>
+                    <span className="bg-amber-500/15 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {stats.maintenance.upcoming.length}
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {stats.maintenance.upcoming.map((car: any) => (
+                      <div key={car.id} className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                            <Car size={14} className="text-amber-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-200">{car.brand}</p>
+                            <span className="font-mono text-[10px] text-slate-500">{car.licensePlate}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-semibold text-amber-400">
+                            {daysFromNow(car.nextMaintenanceDue)} days left
+                          </p>
+                          <p className="text-[10px] text-slate-500">Due {formatDate(car.nextMaintenanceDue)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
