@@ -508,6 +508,109 @@ export default function CostAnalytics() {
           </div>
         </div>
       )}
+
+      {/* ─── Expense Analytics Section ──────────────────────────────── */}
+      {stats?.expenses && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-5">
+            <Wallet size={18} className="text-purple-400" />
+            <h2 className="font-display text-lg font-bold text-slate-100">Expense Analytics</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Maintenance Cost by Month */}
+            <div className="card p-5">
+              <p className="text-sm font-semibold text-slate-300 mb-4">Vehicle Maintenance Cost (Monthly)</p>
+              {stats.expenses.maintenanceCostByMonth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={stats.expenses.maintenanceCostByMonth.map(d => ({
+                    month: new Date(d.year, d.month - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                    Cost: d.cost,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={{ stroke: CHART_COLORS.grid }} tickLine={false} />
+                    <YAxis tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} width={48} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="Cost" fill="#fbbf24" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[260px] flex items-center justify-center text-slate-600 text-sm">No maintenance data yet</div>
+              )}
+            </div>
+
+            {/* Driver Expense by Month */}
+            <div className="card p-5">
+              <p className="text-sm font-semibold text-slate-300 mb-4">Driver Salary Expense (Monthly)</p>
+              {stats.expenses.driverExpenseByMonth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={stats.expenses.driverExpenseByMonth.map(d => ({
+                    month: new Date(d.year, d.month - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                    Cost: d.cost,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={{ stroke: CHART_COLORS.grid }} tickLine={false} />
+                    <YAxis tick={{ fill: CHART_COLORS.axis, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} width={48} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="Cost" fill="#a78bfa" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[260px] flex items-center justify-center text-slate-600 text-sm">No driver expense data yet</div>
+              )}
+            </div>
+
+            {/* Total Expense Breakdown Pie */}
+            <div className="card p-5 lg:col-span-2">
+              <p className="text-sm font-semibold text-slate-300 mb-4">Total Expense Breakdown</p>
+              {(() => {
+                const pieData = [
+                  { name: 'Fuel', value: stats.financials.totalFuelExpense },
+                  { name: 'Maintenance', value: stats.expenses.maintenanceCostByMonth.reduce((s, d) => s + d.cost, 0) },
+                  { name: 'Driver Salaries', value: stats.expenses.totalDriverExpense },
+                  { name: 'Office Rent', value: stats.expenses.totalOfficeRent },
+                ].filter(d => d.value > 0);
+                const EXPENSE_COLORS = ['#fbbf24', '#fb7185', '#a78bfa', '#34d399'];
+                return pieData.length > 0 ? (
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <ResponsiveContainer width="50%" height={240}>
+                      <PieChart>
+                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={3} dataKey="value" stroke="none">
+                          {pieData.map((_e, i) => <Cell key={i} fill={EXPENSE_COLORS[i % EXPENSE_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          return (
+                            <div className="rounded-lg border px-3 py-2 shadow-xl text-xs" style={{ backgroundColor: CHART_COLORS.tooltipBg, borderColor: CHART_COLORS.tooltipBorder }}>
+                              <p className="font-semibold text-slate-200">{payload[0].name}</p>
+                              <p className="text-slate-100 font-bold">₹{Number(payload[0].value).toLocaleString()}</p>
+                            </div>
+                          );
+                        }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex-1 space-y-3">
+                      {pieData.map((d, i) => (
+                        <div key={i} className="flex items-center gap-2.5">
+                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: EXPENSE_COLORS[i % EXPENSE_COLORS.length] }} />
+                          <span className="text-sm text-slate-400 flex-1">{d.name}</span>
+                          <span className="text-sm font-semibold text-slate-200">₹{d.value.toLocaleString()}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-slate-800/60 pt-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-300">Total</span>
+                        <span className="text-sm font-bold text-slate-100">₹{stats.expenses.totalExpense.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[240px] flex items-center justify-center text-slate-600 text-sm">No expense data yet</div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

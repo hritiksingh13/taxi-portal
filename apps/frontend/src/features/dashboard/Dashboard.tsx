@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useDashboardStore } from '../../core/store/useDashboardStore';
 import { api } from '../../core/api.client';
 import {
+  DollarSign,
+  Wallet,
   Car,
   Users,
   Building2,
@@ -244,6 +246,34 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Expense Overview */}
+          {stats.expenses && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="stat-card animate-fade-up">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-400 font-medium">Maintenance (This Month)</p>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400"><Wrench size={17} /></div>
+                </div>
+                <p className="text-3xl font-display font-bold text-slate-100">₹{stats.expenses.maintenanceCostCurrentMonth.toLocaleString()}</p>
+              </div>
+              <div className="stat-card animate-fade-up">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-400 font-medium">Driver Expense (This Month)</p>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-purple-500/15 text-purple-400"><Wallet size={17} /></div>
+                </div>
+                <p className="text-3xl font-display font-bold text-slate-100">₹{stats.expenses.driverExpenseCurrentMonth.toLocaleString()}</p>
+              </div>
+              <div className="stat-card animate-fade-up">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-400 font-medium">Total Expense (All Time)</p>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-500/15 text-rose-400"><DollarSign size={17} /></div>
+                </div>
+                <p className="text-3xl font-display font-bold text-slate-100">₹{stats.expenses.totalExpense.toLocaleString()}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Fuel + Maintenance + Salaries + Rent</p>
+              </div>
             </div>
           )}
         </>

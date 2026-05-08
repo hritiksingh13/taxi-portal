@@ -16,6 +16,7 @@ import {
   X,
   CalendarClock,
   Wrench,
+  Wallet,
 } from 'lucide-react';
 
 const navItems = [
@@ -26,6 +27,7 @@ const navItems = [
   { path: '/data-entry', icon: ClipboardList, label: 'Data Entry' },
   { path: '/past-trips', icon: History, label: 'Past Trips' },
   { path: '/customers', icon: Users2, label: 'Customers' },
+  { path: '/payroll', icon: Wallet, label: 'Payroll' },
   { path: '/cost-analytics', icon: BarChart3, label: 'Cost Analytics' },
   { path: '/email-updates', icon: Mail, label: 'Email Updates' },
 ];

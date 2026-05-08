@@ -5,6 +5,7 @@ export const createDriverSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Driver name must be at least 2 characters'),
     phoneNumber: z.string().min(7, 'Invalid phone number'),
+    email: z.string().email('Invalid email format').optional().or(z.literal('')),
     status: z.enum(['Free', 'Busy', 'Offline']).default('Offline'),
   }),
 });
@@ -14,6 +15,7 @@ export const updateDriverSchema = z.object({
   body: z.object({
     name: z.string().optional(),
     phoneNumber: z.string().optional(),
+    email: z.string().email('Invalid email format').optional().nullable().or(z.literal('')),
     status: z.enum(['Free', 'Busy', 'Offline']).optional(),
   }),
 });

@@ -52,6 +52,7 @@ export interface Driver {
   id: string;
   name: string;
   phoneNumber: string;
+  email?: string | null;
   status: 'Free' | 'Busy' | 'Offline';
   driverAgents?: { agent: { id: string; name: string }; assignedAt: string }[];
   trips?: Trip[];
@@ -92,6 +93,23 @@ export interface DashboardStats {
     upcoming: Car[];
     overdue: Car[];
   };
+  expenses: {
+    maintenanceCostCurrentMonth: number;
+    maintenanceCostByMonth: { month: number; year: number; cost: number }[];
+    driverExpenseCurrentMonth: number;
+    driverExpenseByMonth: { month: number; year: number; cost: number }[];
+    totalDriverExpense: number;
+    totalOfficeRent: number;
+    totalExpense: number;
+  };
+}
+
+export interface Office {
+  id: string;
+  name: string;
+  location: string;
+  monthlyRent: number;
+  createdAt: string;
 }
 
 interface DashboardStore {

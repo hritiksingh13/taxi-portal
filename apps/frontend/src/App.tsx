@@ -11,6 +11,7 @@ import CostAnalytics from './features/cost-analytics/CostAnalytics';
 import EmailUpdates from './features/email-updates/EmailUpdates';
 import CustomerPortal from './features/customer-portal/CustomerPortal';
 import VehicleManagement from './features/vehicles/VehicleManagement';
+import PayrollDashboard from './features/payroll/PayrollDashboard';
 import { socket } from './core/socket.client';
 import { useDashboardStore } from './core/store/useDashboardStore';
 import { api } from './core/api.client';
@@ -116,6 +117,7 @@ export default function App() {
         <Route path="/data-entry" element={<DataEntryPortal />} />
         <Route path="/past-trips" element={<PastTrips />} />
         <Route path="/customers" element={<CustomerManagement />} />
+        <Route path="/payroll" element={<PayrollDashboard />} />
         <Route path="/cost-analytics" element={<CostAnalytics />} />
         <Route path="/email-updates" element={<EmailUpdates />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -149,7 +149,7 @@ function CarForm() {
 function DriverForm() {
   const { drivers, setDrivers } = useDashboardStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', phoneNumber: '', status: 'Offline' });
+  const [form, setForm] = useState({ name: '', phoneNumber: '', email: '', status: 'Offline' });
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -157,7 +157,7 @@ function DriverForm() {
 
   const handleEdit = (driver: any) => {
     setEditingId(driver.id);
-    setForm({ name: driver.name, phoneNumber: driver.phoneNumber, status: driver.status });
+    setForm({ name: driver.name, phoneNumber: driver.phoneNumber, email: driver.email || '', status: driver.status });
     setStatus(null);
   };
 
@@ -190,7 +190,7 @@ function DriverForm() {
       const res = await api.get('/drivers');
       setDrivers(res.data.data.drivers);
       setEditingId(null);
-      setForm({ name: '', phoneNumber: '', status: 'Offline' });
+      setForm({ name: '', phoneNumber: '', email: '', status: 'Offline' });
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     } finally {
@@ -200,7 +200,7 @@ function DriverForm() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', phoneNumber: '', status: 'Offline' });
+    setForm({ name: '', phoneNumber: '', email: '', status: 'Offline' });
     setStatus(null);
   };
 
@@ -209,6 +209,7 @@ function DriverForm() {
       <div className="space-y-4">
         <FormInput label="Full Name *" value={form.name} onChange={set('name')} placeholder="e.g. Rahul Sharma" />
         <FormInput label="Phone Number *" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="e.g. +91 98765 43210" />
+        <FormInput label="Email (Optional)" value={form.email} onChange={set('email')} placeholder="e.g. driver@example.com" type="email" />
         <FormSelect
           label="Initial Status"
           value={form.status}

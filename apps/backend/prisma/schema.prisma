@@ -61,16 +61,21 @@ model Agent {
 }
 
 model Driver {
-  id             String        @id @default(uuid())
+  id             String              @id @default(uuid())
   name           String
-  phoneNumber    String        @unique
-  status         DriverStatus  @default(Offline)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  phoneNumber    String              @unique
+  email          String?
+  status         DriverStatus        @default(Offline)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   // Relationships
   driverAgents   DriverAgent[]
   trips          Trip[]
+  leaves         DriverLeave[]
+  advances       DriverAdvance[]
+  salaryConfig   DriverSalaryConfig?
+  salarySlips    SalarySlip[]
 }
 
 // Explicit Many-to-Many Relationship Table
@@ -151,4 +156,66 @@ model MaintenanceRecord {
   // Relationship
   carId     String
   car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+// Payroll Models
+
+model DriverLeave {
+  id        String   @id @default(uuid())
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  driverId  String
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model DriverAdvance {
+  id               String   @id @default(uuid())
+  amount           Float
+  date             DateTime @default(now())
+  note             String?
+  deductFromSalary Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  driverId         String
+  driver           Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model DriverSalaryConfig {
+  id            String   @id @default(uuid())
+  baseSalary    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  driverId      String   @unique
+  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model SalarySlip {
+  id              String   @id @default(uuid())
+  month           Int
+  year            Int
+  baseSalary      Float
+  totalLeaves     Int
+  leaveDeduction  Float
+  totalAdvances   Float
+  netSalary       Float
+  generatedAt     DateTime @default(now())
+
+  driverId        String
+  driver          Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, month, year])
+}
+
+// Office Model
+
+model Office {
+  id           String   @id @default(uuid())
+  name         String
+  location     String
+  monthlyRent  Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
